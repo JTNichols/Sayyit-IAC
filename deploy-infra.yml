@@ -1,0 +1,61 @@
+name: Deploy Sayyit Infrastructure
+
+on:
+  push:
+    branches: [ env/dev ]
+    paths:
+      - 'main.bicep'
+      - '.github/workflows/deploy-infra.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  RESOURCE_GROUP: sayyit_rg1
+  ENV_NAME: dev
+  BASE_NAME: sayyit
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Show Azure context
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az account show
+
+      - name: Lint Bicep
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az bicep install
+            az bicep lint --file ./main.bicep
+
+      - name: Deploy infrastructure
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            DEPLOYMENT_PRINCIPAL_OBJECT_ID=$(az ad sp show \
+              --id "${{ secrets.AZURE_CLIENT_ID }}" \
+              --query id -o tsv)
+
+            az deployment group create \
+              --resource-group $RESOURCE_GROUP \
+              --template-file ./main.bicep \
+              --parameters env=$ENV_NAME \
+                           baseName=$BASE_NAME \
+                           deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID
