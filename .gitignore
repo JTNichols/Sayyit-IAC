@@ -1,0 +1,16 @@
+# OS / editor
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Build / logs
+bin/
+obj/
+Logs/
+
+# Bicep / IaC
+*.bicepparam.local
+*.bicepparam.secret.json
+*.arm.json
+*.log
+*.tmp
