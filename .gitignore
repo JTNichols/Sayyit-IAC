@@ -8,9 +8,50 @@ bin/
 obj/
 Logs/
 
+# VS Code
+.vscode/
+.history/
+*.code-workspace.tmp
+
 # Bicep / IaC
 *.bicepparam.local
 *.bicepparam.secret.json
+*.bicepCache/
 *.arm.json
 *.log
 *.tmp
+
+########################
+# Environment / secrets
+########################
+.env
+.env.*
+secrets.json
+*.key
+*.pem
+
+########################
+# .NET / build outputs
+########################
+
+bin/
+obj/
+[Ll]ogs/
+[Bb]uild/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+########################
+# Misc tooling
+########################
+# PSRule
+ps-rule.local.yaml
+ps-rule.local.yml
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
