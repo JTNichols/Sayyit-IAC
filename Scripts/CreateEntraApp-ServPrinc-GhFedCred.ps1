@@ -8,11 +8,17 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ResourceGroupName # e.g. "sayyit_rg1"
 )
+# Verify Repo name
+$Repo = $Repo.Trim()
+if ($Repo -notmatch '^[^/\s]+/[^/\s]+$') {
+    throw "Repo must be in the format 'OWNER/REPO', for example 'JTNichols/sayyit-iac'."
+}
 
 $Branch = "env/$EnvironmentName"
 $AppName = "sayyit-iac-github-actions-$EnvironmentName"
+$Subject = "repo:$Repo:ref:refs/heads/$Branch"
 Write-Host "Setting up OIDC identity for repo '$Repo' branch '$Branch' on resource group '$ResourceGroupName'..."
-
+Write-Host "Expected federated credential subject: $Subject"
 # Get subscription and tenant from current az login context
 $SubscriptionId = az account show --query id -o tsv
 $TenantId       = az account show --query tenantId -o tsv
@@ -73,7 +79,7 @@ $federatedJson = @"
 {
   "name": "github-$($Branch.Replace('/','-'))",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:$Repo:ref:refs/heads/$Branch",
+  "subject": "$Subject",
   "description": "GitHub Actions OIDC for $Repo branch $Branch",
   "audiences": [
     "api://AzureADTokenExchange"
@@ -84,7 +90,7 @@ $federatedJson = @"
 $fcPath = ".\federated-credential.json"
 $federatedJson | Set-Content -Path $fcPath -Encoding UTF8
 
-Write-Host "Creating federated credential on app '$AppObjectId' for subject repo:$Repo:ref:refs/heads/$Branch ..."
+Write-Host "Creating federated credential on app '$AppObjectId' for subject $Subject ..."
 
 az ad app federated-credential create `
     --id $AppObjectId `
