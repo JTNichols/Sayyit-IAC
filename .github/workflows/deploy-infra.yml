@@ -1,3 +1,6 @@
+# The script to create the GH OIDC credential must be run one time prior to this
+# CreateEntraApp-ServPrinc-GhFedCred.ps1 -Repo "JTNichols/sayyit-iac" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
+ 
 name: Deploy Sayyit Infrastructure
 
 on:
@@ -16,6 +19,9 @@ env:
   RESOURCE_GROUP: sayyit_rg1
   ENV_NAME: dev
   BASE_NAME: sayyit
+  WEBAPP_NAME: sayyit-dev-web
+  KEYVAULT_NAME: sayyit-dev-kv
+  PUBLISH_PROFILE_SECRET_NAME: sayyit-dev-web-publish-profile
 
 jobs:
   deploy:
@@ -43,6 +49,15 @@ jobs:
         with:
           inlineScript: |
             az account show
+            
+# Only required once:
+      # - name: Set up GitHub OIDC identity
+      #   shell: pwsh
+      #   run: |
+      #     ./Scripts/CreateEntraApp-ServPrinc-GhFedCred.ps1 `
+      #       -Repo "JTNichols/sayyit-iac" `
+      #       -EnvironmentName "dev" `
+      #       -ResourceGroupName "sayyit_rg1"
 
       - name: Ensure required resource providers are registered
         uses: azure/CLI@v2
@@ -72,3 +87,20 @@ jobs:
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID
+                
+      - name: Save web app publish profile to Key Vault
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az webapp deployment list-publishing-profiles \
+              --resource-group $RESOURCE_GROUP \
+              --name $WEBAPP_NAME \
+              --xml \
+              --output tsv > publish-profile.xml
+
+            test -s publish-profile.xml
+
+            az keyvault secret set \
+              --vault-name $KEYVAULT_NAME \
+              --name $PUBLISH_PROFILE_SECRET_NAME \
+              --file publish-profile.xml
