@@ -24,6 +24,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Check Azure secrets presence
+        run: |
+          test -n "${{ secrets.AZURE_CLIENT_ID }}" && echo "CLIENT_ID set" || echo "CLIENT_ID missing"
+          test -n "${{ secrets.AZURE_TENANT_ID }}" && echo "TENANT_ID set" || echo "TENANT_ID missing"
+          test -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" && echo "SUBSCRIPTION_ID set" || echo "SUBSCRIPTION_ID missing"
 
       - name: Azure login
         uses: azure/login@v2
@@ -37,6 +43,13 @@ jobs:
         with:
           inlineScript: |
             az account show
+
+      - name: Ensure required resource providers are registered
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az provider register --namespace Microsoft.KeyVault --wait
+            az provider register --namespace Microsoft.Web --wait
 
       - name: Lint Bicep
         uses: azure/CLI@v2
