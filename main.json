@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "14964388495315791954"
+      "templateHash": "7149780699152180721"
     }
   },
   "parameters": {
@@ -15,6 +15,15 @@
     "baseName": {
       "type": "string"
     },
+    "deploymentPrincipalObjectId": {
+      "type": "string"
+    },
+    "sqlServerAdministratorPassword": {
+      "type": "securestring"
+    },
+    "updatePassword": {
+      "type": "bool"
+    },
     "locationRG": {
       "type": "string",
       "defaultValue": "[resourceGroup().location]"
@@ -23,31 +32,13 @@
       "type": "string",
       "defaultValue": "centralus"
     },
-    "deploymentPrincipalObjectId": {
+    "locationSqlServer": {
       "type": "string",
-      "metadata": {
-        "description": "Object ID of the GitHub deployment service principal."
-      }
+      "defaultValue": "centralus"
     },
-    "sqlServerAdministratorLogin": {
+    "sqlServerAdminLoginName": {
       "type": "string",
-      "defaultValue": "sqladminuser",
-      "metadata": {
-        "description": "Administrator login for the Azure SQL server."
-      }
-    },
-    "sqlServerAdministratorPassword": {
-      "type": "securestring",
-      "metadata": {
-        "description": "Administrator password for the Azure SQL server. Supply this from a workflow secret."
-      }
-    },
-    "updatePassword": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Whether to update the SQL administrator password during deployment."
-      }
+      "defaultValue": "sqladminuser"
     }
   },
   "variables": {
@@ -62,7 +53,7 @@
     "sqlDatabaseName": "[format('{0}-{1}-db', parameters('baseName'), parameters('env'))]",
     "keyVaultSecretsUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
     "keyVaultSecretsOfficerRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')]",
-    "sqlServerProperties": "[union(createObject('administratorLogin', parameters('sqlServerAdministratorLogin'), 'version', '12.0', 'minimumTlsVersion', '1.2', 'publicNetworkAccess', 'Enabled'), if(parameters('updatePassword'), createObject('administratorLoginPassword', parameters('sqlServerAdministratorPassword')), createObject()))]"
+    "sqlServerProperties": "[union(createObject('administratorLogin', parameters('sqlServerAdminLoginName'), 'version', '12.0', 'minimumTlsVersion', '1.2', 'publicNetworkAccess', 'Enabled'), if(parameters('updatePassword'), createObject('administratorLoginPassword', parameters('sqlServerAdministratorPassword')), createObject()))]"
   },
   "resources": [
     {
@@ -148,7 +139,7 @@
       "type": "Microsoft.Sql/servers",
       "apiVersion": "2023-08-01-preview",
       "name": "[variables('sqlServerName')]",
-      "location": "[parameters('locationRG')]",
+      "location": "[parameters('locationSqlServer')]",
       "tags": "[variables('commonTags')]",
       "properties": "[variables('sqlServerProperties')]"
     },
@@ -156,7 +147,7 @@
       "type": "Microsoft.Sql/servers/databases",
       "apiVersion": "2023-08-01-preview",
       "name": "[format('{0}/{1}', variables('sqlServerName'), variables('sqlDatabaseName'))]",
-      "location": "[parameters('locationRG')]",
+      "location": "[parameters('locationSqlServer')]",
       "tags": "[variables('commonTags')]",
       "sku": {
         "name": "Basic",
@@ -171,6 +162,7 @@
       ]
     },
     {
+      "condition": "[parameters('updatePassword')]",
       "type": "Microsoft.KeyVault/vaults/secrets",
       "apiVersion": "2023-07-01",
       "name": "[format('{0}/{1}', variables('keyVaultName'), 'sqlServerAdministratorPassword')]",

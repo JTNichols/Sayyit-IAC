@@ -8,6 +8,7 @@ param updatePassword bool
 // Optional params
 param locationRG string = resourceGroup().location
 param locationWebApp string = 'centralus'
+param locationSqlServer string = 'centralus'
 param sqlServerAdminLoginName string = 'sqladminuser'
 
 
@@ -108,7 +109,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
 
     resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
       name: sqlServerName
-      location: locationRG
+      location: locationSqlServer
       tags: commonTags
       properties: sqlServerProperties
     }
@@ -116,7 +117,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
       parent: sqlServer
       name: sqlDatabaseName
-      location: locationRG
+      location: locationSqlServer
       tags: commonTags
       sku: {
         name: 'Basic'
