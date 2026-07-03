@@ -1,0 +1,199 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "14964388495315791954"
+    }
+  },
+  "parameters": {
+    "env": {
+      "type": "string"
+    },
+    "baseName": {
+      "type": "string"
+    },
+    "locationRG": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "locationWebApp": {
+      "type": "string",
+      "defaultValue": "centralus"
+    },
+    "deploymentPrincipalObjectId": {
+      "type": "string",
+      "metadata": {
+        "description": "Object ID of the GitHub deployment service principal."
+      }
+    },
+    "sqlServerAdministratorLogin": {
+      "type": "string",
+      "defaultValue": "sqladminuser",
+      "metadata": {
+        "description": "Administrator login for the Azure SQL server."
+      }
+    },
+    "sqlServerAdministratorPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Administrator password for the Azure SQL server. Supply this from a workflow secret."
+      }
+    },
+    "updatePassword": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether to update the SQL administrator password during deployment."
+      }
+    }
+  },
+  "variables": {
+    "commonTags": {
+      "env": "[parameters('env')]",
+      "project": "[parameters('baseName')]"
+    },
+    "appServicePlanName": "[format('{0}-{1}-asp', parameters('baseName'), parameters('env'))]",
+    "webAppName": "[format('{0}-{1}-web', parameters('baseName'), parameters('env'))]",
+    "keyVaultName": "[format('{0}-{1}-kv', parameters('baseName'), parameters('env'))]",
+    "sqlServerName": "[format('{0}-{1}-sql', parameters('baseName'), parameters('env'))]",
+    "sqlDatabaseName": "[format('{0}-{1}-db', parameters('baseName'), parameters('env'))]",
+    "keyVaultSecretsUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+    "keyVaultSecretsOfficerRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')]",
+    "sqlServerProperties": "[union(createObject('administratorLogin', parameters('sqlServerAdministratorLogin'), 'version', '12.0', 'minimumTlsVersion', '1.2', 'publicNetworkAccess', 'Enabled'), if(parameters('updatePassword'), createObject('administratorLoginPassword', parameters('sqlServerAdministratorPassword')), createObject()))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('appServicePlanName')]",
+      "location": "[parameters('locationWebApp')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic"
+      },
+      "tags": "[variables('commonTags')]"
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('webAppName')]",
+      "location": "[parameters('locationWebApp')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+      },
+      "tags": "[variables('commonTags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('locationRG')]",
+      "tags": "[variables('commonTags')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "enableRbacAuthorization": true,
+        "enabledForTemplateDeployment": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 30,
+        "publicNetworkAccess": "Enabled",
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), resourceId('Microsoft.Web/sites', variables('webAppName')), 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultSecretsUserRoleDefinitionId')]",
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('webAppName')), '2023-12-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('webAppName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), parameters('deploymentPrincipalObjectId'), 'KeyVaultSecretsOfficer')]",
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultSecretsOfficerRoleDefinitionId')]",
+        "principalId": "[parameters('deploymentPrincipalObjectId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2023-08-01-preview",
+      "name": "[variables('sqlServerName')]",
+      "location": "[parameters('locationRG')]",
+      "tags": "[variables('commonTags')]",
+      "properties": "[variables('sqlServerProperties')]"
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2023-08-01-preview",
+      "name": "[format('{0}/{1}', variables('sqlServerName'), variables('sqlDatabaseName'))]",
+      "location": "[parameters('locationRG')]",
+      "tags": "[variables('commonTags')]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', variables('keyVaultName'), 'sqlServerAdministratorPassword')]",
+      "properties": {
+        "value": "[parameters('sqlServerAdministratorPassword')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName')), '2023-07-01').vaultUri]"
+    },
+    "webAppPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', variables('webAppName')), '2023-12-01', 'full').identity.principalId]"
+    }
+  }
+}

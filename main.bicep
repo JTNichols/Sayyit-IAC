@@ -1,9 +1,15 @@
+// Required params
 param env string
-param baseName string
+param baseName string 
+param deploymentPrincipalObjectId string
+@secure() 
+param sqlServerAdministratorPassword string 
+param updatePassword bool 
+// Optional params
 param locationRG string = resourceGroup().location
 param locationWebApp string = 'centralus'
-@description('Object ID of the GitHub deployment service principal.')
-param deploymentPrincipalObjectId string
+param sqlServerAdminLoginName string = 'sqladminuser'
+
 
 var commonTags = {
   env: env
@@ -13,6 +19,8 @@ var commonTags = {
 var appServicePlanName = '${baseName}-${env}-asp'
 var webAppName = '${baseName}-${env}-web'
 var keyVaultName = '${baseName}-${env}-kv'
+var sqlServerName = '${baseName}-${env}-sql'
+var sqlDatabaseName = '${baseName}-${env}-db'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     '4633458b-17de-408a-b874-0445c86b69e6'
@@ -21,6 +29,14 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
     )
+var sqlServerProperties = union({
+  administratorLogin: sqlServerAdminLoginName
+  version: '12.0'
+  minimumTlsVersion: '1.2'
+  publicNetworkAccess: 'Enabled'
+}, updatePassword ? {
+  administratorLoginPassword: sqlServerAdministratorPassword
+} : {})
 // App Service Plan "sayyit-{env}-asp"
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
@@ -87,6 +103,36 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         roleDefinitionId: keyVaultSecretsOfficerRoleDefinitionId
         principalId: deploymentPrincipalObjectId
         principalType: 'ServicePrincipal'
+      }
+    }
+
+    resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
+      name: sqlServerName
+      location: locationRG
+      tags: commonTags
+      properties: sqlServerProperties
+    }
+
+    resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
+      parent: sqlServer
+      name: sqlDatabaseName
+      location: locationRG
+      tags: commonTags
+      sku: {
+        name: 'Basic'
+        tier: 'Basic'
+      }
+      properties: {
+        collation: 'SQL_Latin1_General_CP1_CI_AS'
+        maxSizeBytes: 2147483648
+      }
+    }
+
+    resource sqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (updatePassword) {
+      parent: keyVault
+      name: 'sqlServerAdministratorPassword'
+      properties: {
+        value: sqlServerAdministratorPassword
       }
     }
     

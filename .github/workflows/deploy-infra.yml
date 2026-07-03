@@ -16,6 +16,7 @@ env:
   RESOURCE_GROUP: sayyit_rg1
   ENV_NAME: dev
   BASE_NAME: sayyit
+  GENERATE_SQL_PASSWORD: true
 
 jobs:
   deploy:
@@ -58,6 +59,35 @@ jobs:
             az bicep install
             az bicep lint --file ./main.bicep
 
+      - name: Generate SQL password
+        if: ${{ env.GENERATE_SQL_PASSWORD == 'true' }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          import secrets
+          import string
+
+          lower = string.ascii_lowercase
+          upper = string.ascii_uppercase
+          digits = string.digits
+          special = '!@#$%^&*()-_=+'
+
+          password = [
+              secrets.choice(lower),
+              secrets.choice(upper),
+              secrets.choice(digits),
+              secrets.choice(special),
+            ]
+
+          alphabet = lower + upper + digits + special
+          password.extend(secrets.choice(alphabet) for _ in range(20))
+          secrets.SystemRandom().shuffle(password)
+
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as handle:
+              handle.write('sqlServerPassword=' + ''.join(password) + '\n')
+          PY
+
       - name: Deploy infrastructure
         uses: azure/CLI@v2
         with:
@@ -71,4 +101,5 @@ jobs:
               --template-file ./main.bicep \
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
-                           deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID
+                           deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
+                           sqlServerAdministratorPassword='$sqlServerPassword'
