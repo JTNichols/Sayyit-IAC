@@ -20,7 +20,7 @@ var commonTags = {
 var appServicePlanName = '${baseName}-${env}-asp'
 var webAppName = '${baseName}-${env}-web'
 var keyVaultName = '${baseName}-${env}-kv'
-var sqlServerName = '${baseName}-${env}-sql'
+var sqlServerName = '${baseName}-${env}-sqlServer'
 var sqlDatabaseName = '${baseName}-${env}-db'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
