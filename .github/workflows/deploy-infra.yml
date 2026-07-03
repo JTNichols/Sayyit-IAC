@@ -102,4 +102,5 @@ jobs:
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
-                           sqlServerAdministratorPassword='$sqlServerPassword'
+                           sqlServerAdministratorPassword='$sqlServerPassword' \ 
+                           updatePassword="true"
