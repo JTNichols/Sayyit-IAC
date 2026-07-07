@@ -16,7 +16,7 @@ env:
   RESOURCE_GROUP: sayyit_rg1
   ENV_NAME: dev
   BASE_NAME: sayyit
-  GENERATE_SQL_PASSWORD: true
+  GENERATE_SQL_PASSWORD: false
 
 jobs:
   deploy:
