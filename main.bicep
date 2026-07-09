@@ -10,8 +10,7 @@ param locationRG string = resourceGroup().location
 param locationWebApp string = 'centralus'
 param locationSqlServer string = 'centralus'
 param sqlServerAdminLoginName string = 'sqladminuser'
-
-
+ 
 var commonTags = {
   env: env
   project: baseName
@@ -20,7 +19,7 @@ var commonTags = {
 var appServicePlanName = '${baseName}-${env}-asp'
 var webAppName = '${baseName}-${env}-web'
 var keyVaultName = '${baseName}-${env}-kv'
-var sqlServerName = '${baseName}-${env}-sqlServer'
+var sqlServerName = '${baseName}-${env}-sqlserver'
 var sqlDatabaseName = '${baseName}-${env}-db'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
@@ -55,7 +54,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   location: locationWebApp
   identity: {
       type: 'SystemAssigned'
-    }
+   }
        properties: {
          serverFarmId: appServicePlan.id
        }
