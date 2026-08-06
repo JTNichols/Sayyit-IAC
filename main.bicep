@@ -1,10 +1,39 @@
+// Bicep template to deploy a web app, key vault, and SQL server with database. 
+// The web app is assigned a system managed identity and granted access to the key vault secrets. 
+// The SQL server administrator password is stored in the key vault as a secret.
+// This bicep file executes via GitHub Action.
+
 // Required params
 param env string
 param baseName string 
 param deploymentPrincipalObjectId string
 @secure() 
 param sqlServerAdministratorPassword string 
-param updatePassword bool 
+param updatePassword bool = false
+
+// External ID (Entra External ID for customers) params
+param deployExternalIdTenant bool = true
+@minLength(1)
+@maxLength(26)
+param externalIdTenantName string = 'sayyit'
+param externalIdTenantDisplayName string = 'sayyit-external-id'
+@minLength(2)
+@maxLength(2)
+param externalIdCountryCode string = 'US'
+@allowed([
+  'United States'
+  'Europe'
+  'Asia Pacific'
+  'Australia'
+])
+param externalIdDataLocation string = 'United States'
+@allowed([
+  'Standard'
+  'PremiumP1'
+  'PremiumP2'
+])
+param externalIdSkuName string = 'Standard'
+
 // Optional params
 param locationRG string = resourceGroup().location
 param locationWebApp string = 'centralus'
@@ -16,6 +45,7 @@ var commonTags = {
   project: baseName
 }
 
+// Variable declarations
 var appServicePlanName = '${baseName}-${env}-asp'
 var webAppName = '${baseName}-${env}-web'
 var keyVaultName = '${baseName}-${env}-kv'
@@ -37,6 +67,8 @@ var sqlServerProperties = union({
 }, updatePassword ? {
   administratorLoginPassword: sqlServerAdministratorPassword
 } : {})
+
+
 // App Service Plan "sayyit-{env}-asp"
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
@@ -62,6 +94,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
      }
     
     // Key Vault "sayyit-{env}-kv"
+    // Runs each time, idempotent if environment variables are the same.
     resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
       name: keyVaultName
       location: locationRG
@@ -105,7 +138,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         principalType: 'ServicePrincipal'
       }
     }
-
+// SQL Server "sayyit-{env}-sqlserver" and Database
     resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
       name: sqlServerName
       location: locationSqlServer
@@ -135,7 +168,28 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         value: sqlServerAdministratorPassword
       }
     }
+
+    // Entra External ID tenant for public sign-up/sign-in.
+    // Idempotency: this is keyed by externalIdTenantName, so repeat deployments reconcile the same tenant resource.
+    resource externalIdTenant 'Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview' = if (deployExternalIdTenant) {
+      name: externalIdTenantName
+      location: externalIdDataLocation
+      tags: commonTags
+      sku: {
+        name: externalIdSkuName
+        tier: 'A0'
+      }
+      properties: {
+        createTenantProperties: {
+          displayName: externalIdTenantDisplayName
+          countryCode: externalIdCountryCode
+        }
+      }
+    }
     
     output keyVaultName string = keyVault.name
     output keyVaultUri string = keyVault.properties.vaultUri
     output webAppPrincipalId string = webApp.identity.principalId
+    output externalIdTenantResourceName string = deployExternalIdTenant ? externalIdTenant.name : ''
+    output externalIdTenantId string = deployExternalIdTenant ? externalIdTenant.properties.tenantId : ''
+    output externalIdTenantDomain string = deployExternalIdTenant ? externalIdTenant.properties.domainName : ''
