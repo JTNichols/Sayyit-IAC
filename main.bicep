@@ -27,12 +27,11 @@ param externalIdCountryCode string = 'US'
   'Australia'
 ])
 param externalIdDataLocation string = 'United States'
+// CIAM tenant creation currently accepts Base/A0 for this RP operation.
 @allowed([
-  'Standard'
-  'PremiumP1'
-  'PremiumP2'
+  'Base'
 ])
-param externalIdSkuName string = 'Standard'
+param externalIdSkuName string = 'Base'
 
 // Optional params
 param locationRG string = resourceGroup().location
@@ -190,6 +189,6 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     output keyVaultName string = keyVault.name
     output keyVaultUri string = keyVault.properties.vaultUri
     output webAppPrincipalId string = webApp.identity.principalId
-    output externalIdTenantResourceName string = deployExternalIdTenant ? externalIdTenant.name : ''
-    output externalIdTenantId string = deployExternalIdTenant ? externalIdTenant.properties.tenantId : ''
-    output externalIdTenantDomain string = deployExternalIdTenant ? externalIdTenant.properties.domainName : ''
+    output externalIdTenantResourceName string = externalIdTenant.?name ?? ''
+    output externalIdTenantId string = externalIdTenant.?properties.tenantId ?? ''
+    output externalIdTenantDomain string = externalIdTenant.?properties.domainName ?? ''
