@@ -206,10 +206,4 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     
     output keyVaultName string = keyVault.name
     output keyVaultUri string = keyVault.properties.vaultUri
-    output webAppPrincipalId string = webApp.identity.principalId
-    output externalIdTenantResourceName string = externalIdTenant.?name ?? ''
-    output externalIdTenantId string = externalIdTenant.?properties.tenantId ?? ''
-    
-    output externalIdTenantDomain string = deployExternalIdTenant ? externalIdTenant.?properties.domainName ?? '' : ''
-    output externalWebAppRegistrationAppId string = deployExternalAppRegistration ? externalWebAppRegistration!.appId
-  : ''
+    output webAppPrincipalId string = webApp.identity.principalId  
