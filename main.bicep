@@ -209,5 +209,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     output webAppPrincipalId string = webApp.identity.principalId
     output externalIdTenantResourceName string = externalIdTenant.?name ?? ''
     output externalIdTenantId string = externalIdTenant.?properties.tenantId ?? ''
-    output externalIdTenantDomain string = externalIdTenant.?properties.domainName ?? ''
-    output externalWebAppRegistrationAppId string = externalWebAppRegistration.?appId ?? ''
+    
+    output externalIdTenantDomain string = deployExternalIdTenant ? externalIdTenant.?properties.domainName ?? '' : ''
+    output externalWebAppRegistrationAppId string = deployExternalAppRegistration ? externalWebAppRegistration!.appId
+  : ''
