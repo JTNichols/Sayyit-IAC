@@ -14,8 +14,12 @@ param updatePassword bool = false
 // External ID (Entra External ID for customers) params
 param deployExternalIdTenant bool = true
 @minLength(1)
-@maxLength(26)
+@maxLength(10)
 param externalIdTenantName string = 'sayyit'
+@allowed([
+  'onmicrosoft.com'
+])
+param externalIdTenantDomainSuffix string = 'onmicrosoft.com'
 param externalIdTenantDisplayName string = 'sayyit-external-id'
 @minLength(2)
 @maxLength(2)
@@ -50,6 +54,7 @@ var webAppName = '${baseName}-${env}-web'
 var keyVaultName = '${baseName}-${env}-kv'
 var sqlServerName = '${baseName}-${env}-sqlserver'
 var sqlDatabaseName = '${baseName}-${env}-db'
+var externalIdTenantDomainName = '${externalIdTenantName}.${externalIdTenantDomainSuffix}'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     '4633458b-17de-408a-b874-0445c86b69e6'
@@ -171,7 +176,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     // Entra External ID tenant for public sign-up/sign-in.
     // Idempotency: this is keyed by externalIdTenantName, so repeat deployments reconcile the same tenant resource.
     resource externalIdTenant 'Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview' = if (deployExternalIdTenant) {
-      name: externalIdTenantName
+      name: externalIdTenantDomainName
       location: externalIdDataLocation
       tags: commonTags
       sku: {
