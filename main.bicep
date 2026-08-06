@@ -3,6 +3,8 @@
 // The SQL server administrator password is stored in the key vault as a secret.
 // This bicep file executes via GitHub Action.
 
+extension graphV1
+
 // Required params
 param env string
 param baseName string 
@@ -14,6 +16,8 @@ param updatePassword bool = false
 // External ID (Entra External ID for customers) params
 // Must be explicitly enabled by a privileged principal; default false keeps CI idempotent and non-privileged.
 param deployExternalIdTenant bool = false
+// Must be explicitly enabled and requires directory permissions in the external tenant.
+param deployExternalAppRegistration bool = false
 @minLength(1)
 @maxLength(10)
 param externalIdTenantName string = 'sayyit'
@@ -56,6 +60,7 @@ var keyVaultName = '${baseName}-${env}-kv'
 var sqlServerName = '${baseName}-${env}-sqlserver'
 var sqlDatabaseName = '${baseName}-${env}-db'
 var externalIdTenantDomainName = '${externalIdTenantName}.${externalIdTenantDomainSuffix}'
+var externalWebAppRegistrationName = 'sayyit-web-${env}'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     '4633458b-17de-408a-b874-0445c86b69e6'
@@ -191,6 +196,13 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         }
       }
     }
+
+    // App registration for sayyit.web in the tenant context used for this deployment.
+    resource externalWebAppRegistration 'Microsoft.Graph/applications@v1.0' = if (deployExternalAppRegistration) {
+      uniqueName: externalWebAppRegistrationName
+      displayName: externalWebAppRegistrationName
+      signInAudience: 'AzureADandPersonalMicrosoftAccount'
+    }
     
     output keyVaultName string = keyVault.name
     output keyVaultUri string = keyVault.properties.vaultUri
@@ -198,3 +210,4 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     output externalIdTenantResourceName string = externalIdTenant.?name ?? ''
     output externalIdTenantId string = externalIdTenant.?properties.tenantId ?? ''
     output externalIdTenantDomain string = externalIdTenant.?properties.domainName ?? ''
+    output externalWebAppRegistrationAppId string = externalWebAppRegistration.?appId ?? ''
