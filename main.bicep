@@ -12,7 +12,8 @@ param sqlServerAdministratorPassword string
 param updatePassword bool = false
 
 // External ID (Entra External ID for customers) params
-param deployExternalIdTenant bool = true
+// Must be explicitly enabled by a privileged principal; default false keeps CI idempotent and non-privileged.
+param deployExternalIdTenant bool = false
 @minLength(1)
 @maxLength(10)
 param externalIdTenantName string = 'sayyit'

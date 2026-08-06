@@ -17,6 +17,7 @@ env:
   ENV_NAME: dev
   BASE_NAME: sayyit
   GENERATE_SQL_PASSWORD: false
+  DEPLOY_EXTERNAL_ID_TENANT: false
 
 jobs:
   deploy:
@@ -104,4 +105,5 @@ jobs:
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
                            sqlServerAdministratorPassword=$sqlServerPassword \
                            updatePassword=$GENERATE_SQL_PASSWORD \
+                           deployExternalIdTenant=$DEPLOY_EXTERNAL_ID_TENANT \
         
