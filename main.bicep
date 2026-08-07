@@ -10,7 +10,7 @@ param env string
 param baseName string 
 param deploymentPrincipalObjectId string
 @secure() 
-param sqlServerAdministratorPassword string 
+param sqlServerAdministratorPassword string = ''
 param updatePassword bool = false
 
 // External ID (Entra External ID for customers) params
