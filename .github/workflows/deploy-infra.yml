@@ -103,7 +103,3 @@ jobs:
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
-                           sqlServerAdministratorPassword=$sqlServerPassword \
-                           updatePassword=$GENERATE_SQL_PASSWORD \
-                           deployExternalIdTenant=$DEPLOY_EXTERNAL_ID_TENANT \
-        
