@@ -76,7 +76,6 @@ var sqlServerProperties = union({
   administratorLoginPassword: sqlServerAdministratorPassword
 } : {})
 
-
 // 1a. DEV: App Service Plan "sayyit-dev-asp"
 resource dev_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: 'sayyit-dev-asp'
