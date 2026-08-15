@@ -2,10 +2,10 @@ name: Deploy Sayyit Infrastructure
 
 on:
   push:
-    branches: [ env/dev ]
+    branches: [ env/dev, main ]
     paths:
       - 'main.bicep'
-      - '.github/workflows/deploy-infra.yml'
+      - '.github/workflows/sayyit-iac-action.yml'
   workflow_dispatch:
 
 permissions:
@@ -14,10 +14,10 @@ permissions:
 
 env:
   RESOURCE_GROUP: sayyit_rg1
-  ENV_NAME: dev
+  ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
   BASE_NAME: sayyit
   GENERATE_SQL_PASSWORD: false
-  DEPLOY_EXTERNAL_ID_TENANT: false
+  MODIFY_EXTERNAL_ID_TENANT: false
 
 jobs:
   deploy:
@@ -103,3 +103,6 @@ jobs:
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
+                           sqlServerAdministratorPassword=$sqlServerPassword \
+                           modifyExternalIdTenant=$MODIFY_EXTERNAL_ID_TENANT \
+                           updatePassword=$GENERATE_SQL_PASSWORD
