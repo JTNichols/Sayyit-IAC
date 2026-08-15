@@ -18,9 +18,9 @@
 
  
 # example ./Create_Github_to_Azure_Credential.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
-# Run note: regardless of what the repo name looks like in Github, the script will create a subject identifier with
-#           the repo name in lowercase, so this script must create a matching token with lower case, i.e. 
-#           -OwnerRepo "JTNichols/sayyit-iac", not "JTNichols/Sayyit" or "JTNichols/Sayyit-IAC".
+# **Run note**: regardless of what the repo name looks like in Github, the script will create a subject identifier with
+#               the repo name in lowercase, so this script must create a matching token with lower case, 
+#               i.e -OwnerRepo "JTNichols/sayyit-iac"; not "JTNichols/Sayyit" or "JTNichols/Sayyit-IAC".
 param(
     [Parameter(Mandatory = $true)]
     [string]$OwnerRepo, # e.g. "JTNichols/Sayyit-IAC" or "JTNichols/sayyit"
