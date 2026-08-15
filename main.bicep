@@ -53,9 +53,6 @@ var commonTags = {
   project: baseName
 }
 
-
-//
-
 // -----------------------------------------
 // Variable configuration
 // ----------------------------------------- 
