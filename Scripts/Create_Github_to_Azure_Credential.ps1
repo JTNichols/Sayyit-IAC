@@ -17,10 +17,12 @@
 #    NOT the 'Name' of the federated credential. The Name is just a human-readable label & can be duplicated/changed.
 
  
-# example ./Create_Github_to_Azure_Credential.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
+# example ./Create_Github_to_Azure_Credential.ps1 -OwnerRepo "JTNichols/Sayyit-IAC" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
+# NOTE: GitHub OIDC subject matching is case-sensitive. Use the exact casing from the GitHub repo URL,
+# e.g. "JTNichols/Sayyit-IAC" not "JTNichols/sayyit-iac".
 param(
     [Parameter(Mandatory = $true)]
-    [string]$OwnerRepo, # e.g. "JTNichols/sayyit-iac" or "JTNichols/sayyit"
+    [string]$OwnerRepo, # e.g. "JTNichols/Sayyit-IAC" or "JTNichols/sayyit"
 
     [Parameter(Mandatory = $true)]
     [string]$EnvironmentName, # e.g. "dev" or "prod"
@@ -31,7 +33,21 @@ param(
 # Verify Repo name
 $OwnerRepo = $OwnerRepo.Trim()
 if ($OwnerRepo -notmatch '^[^/\s]+/[^/\s]+$') {
-    throw "Repo must be in the format 'OWNER/REPO', for example 'JTNichols/sayyit-iac'."
+    throw "Repo must be in the format 'OWNER/REPO', for example 'JTNichols/Sayyit-IAC'."
+}
+
+# GitHub OIDC subject matching is case-sensitive. Warn if the repo name casing differs from the current remote URL.
+try {
+    $RemoteUrl = git config --get remote.origin.url 2>$null
+    if ($RemoteUrl -match 'github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+?)(?:\.git)?$') {
+        $RemoteOwnerRepo = "$($Matches.owner)/$($Matches.repo)"
+        if ($OwnerRepo -ne $RemoteOwnerRepo) {
+            Write-Warning "GitHub OIDC subject matching is case-sensitive. The repo URL is '$RemoteOwnerRepo' but the script was given '$OwnerRepo'. Use the exact repo casing from the GitHub URL to avoid AADSTS700213."
+        }
+    }
+}
+catch {
+    # Ignore git lookup failures; the user can still provide a valid repo name.
 }
 
 # ----------
