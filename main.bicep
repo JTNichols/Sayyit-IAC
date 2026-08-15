@@ -13,7 +13,7 @@
 
 
 // This script creates:
-// 1. App Service Plan "sayyit-{env}-asp"
+// 1. App Service Plans "sayyit-{env}-asp"
 
 // Notes:
 // The web app is assigned a system managed identity and granted access to the key vault secrets. 
@@ -52,6 +52,9 @@ var commonTags = {
   env: env
   project: baseName
 }
+
+
+//
 
 // -----------------------------------------
 // Variable configuration
