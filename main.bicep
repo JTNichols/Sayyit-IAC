@@ -96,7 +96,7 @@ resource prod_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   }
   tags: commonTags
 }
-// 2. DEV: Web App
+// 2a. DEV: Web App
 resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
   name: 'sayyit-dev-web'
   location: locationWebApp
@@ -108,7 +108,19 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
        }
        tags: commonTags
 }
-    
+// 2b. PROD: Web App
+resource prod_WebApp 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'sayyit-prod-web'
+  location: locationWebApp
+  identity: {
+      type: 'SystemAssigned'
+   }
+       properties: {
+         serverFarmId: prod_AppServicePlan.id
+       }
+       tags: commonTags
+}
+
 // 3a. DEV: Key Vault
 resource dev_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: 'sayyit-dev-kv'
@@ -154,13 +166,23 @@ resource prod_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
     
-// 4. DEV: Allow the Web App managed identity to read secret values
+// 4a. DEV: Allow the Web App managed identity to read secret values
 resource dev_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(dev_KeyVault.id, dev_WebApp.id, 'KeyVaultSecretsUser')
   scope: dev_KeyVault
   properties: {
     roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
     principalId: dev_WebApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}    
+// 4b. PROD: Allow the Web App managed identity to read secret values
+resource prod_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(prod_KeyVault.id, prod_WebApp.id, 'KeyVaultSecretsUser')
+  scope: prod_KeyVault
+  properties: {
+    roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
+    principalId: prod_WebApp.identity.principalId
     principalType: 'ServicePrincipal'
   }
 }
