@@ -49,16 +49,15 @@ param locationSqlServer string = 'centralus'
 param sqlServerAdminLoginName string = 'sqladminuser'
  
 var commonTags = {
-  env: env
   project: baseName
 }
 
 // -----------------------------------------
 // Variable configuration
 // ----------------------------------------- 
-var sqlServerName = '${baseName}-${env}-sqlserver'
-var sqlDatabaseName = '${baseName}-${env}-db'
-var externalWebAppRegistrationName = 'sayyit-web-${env}'
+//var sqlServerName = '${baseName}-${env}-sqlserver'
+//var sqlDatabaseName = '${baseName}-${env}-db'
+//var externalWebAppRegistrationName = 'sayyit-web-${env}'
 var keyVaultSecretsUserRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     '4633458b-17de-408a-b874-0445c86b69e6'
@@ -205,18 +204,41 @@ resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssig
     principalId: deploymentPrincipalObjectId
     principalType: 'ServicePrincipal'
   }
-}
-// 6. DEV: SQL Server
+}  
+
+// 6a. DEV: SQL Server
 resource dev_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
-  name: sqlServerName
+  name: 'sayyit-dev-sqlserver'
   location: locationSqlServer
   tags: commonTags
   properties: sqlServerProperties
 }
-// 7. DEV: SQL Database
+// 6b. PROD: SQL Server
+resource prod_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
+  name: 'sayyit-prod-sqlserver'
+  location: locationSqlServer
+  tags: commonTags
+  properties: sqlServerProperties
+}
+// 7a. DEV: SQL Database
 resource dev_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: dev_SqlServer
-  name: sqlDatabaseName
+  name: 'sayyit-dev-db'
+  location: locationSqlServer
+  tags: commonTags
+  sku: {
+    name: 'Basic'
+    tier: 'Basic'
+  }
+  properties: {
+    collation: 'SQL_Latin1_General_CP1_CI_AS'
+    maxSizeBytes: 2147483648
+  }
+}
+// 7b. PROD: SQL Database
+resource prod_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
+  parent: prod_SqlServer
+  name: 'sayyit-prod-db'
   location: locationSqlServer
   tags: commonTags
   sku: {
@@ -251,12 +273,11 @@ resource externalIdTenant 'Microsoft.AzureActiveDirectory/ciamDirectories@2023-0
       countryCode: 'US'
     }
   }
-}
-
+} 
 // 10. DEV: sayyit-dev-web web app's registration in the external ID tenant
 resource dev_ExternalWebAppRegistration 'Microsoft.Graph/applications@v1.0' = if (modifyExternalIdTenant && env == 'dev'){
-  uniqueName: externalWebAppRegistrationName
-  displayName: externalWebAppRegistrationName
+  uniqueName: 'sayyit-web-dev'
+  displayName: 'sayyit-web-dev'
   signInAudience: 'AzureADandPersonalMicrosoftAccount'
 }
     
