@@ -76,11 +76,13 @@ if ($LASTEXITCODE -ne 0) {
     throw "Resource group '$ResourceGroupName' was not found in the current subscription."
 }
 
+$SubscriptionScope = "/subscriptions/$SubscriptionId"
 $RgScope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName"
 
 Write-Host "Using subscription: $SubscriptionId"
 Write-Host "Using tenant:      $TenantId"
-Write-Host "Scope:             $RgScope"
+Write-Host "Subscription scope: $SubscriptionScope"
+Write-Host "Resource group scope: $RgScope"
  
 # Verify/Create app registration. If it already exists the existing one is used to modify Service Principle's scope/roles, if needed.
 # If no new scope/roles are needed, the script is idempotent and does nothing.
@@ -187,18 +189,37 @@ else {
 }
 
 # ------------------------------------------------------------------------------------------------------
-# Assign Azure RBAC roles at RG scope. This section is why the script continues even
-#     if the app registration + federated credential combo already exists, to allow updating RBAC roles.
+# Assign Azure RBAC roles at subscription and resource-group scope.
+# This is required because provider registration actions like Microsoft.KeyVault/register/action are
+# evaluated at the subscription scope, while resource creation still happens in the target resource group.
 # Current roles assigned: Contributor + User Access Administrator
 # ------------------------------------------------------------------------------------------------------
-$ContributorAssignment = az role assignment list `
+$SubscriptionContributorAssignment = az role assignment list `
+    --assignee-object-id $SpObjectId `
+    --scope $SubscriptionScope `
+    --query "[?roleDefinitionName=='Contributor'] | [0].id" `
+    -o tsv
+
+if (-not $SubscriptionContributorAssignment) {
+    Write-Host "Assigning 'Contributor' role to service principal at subscription scope $SubscriptionScope ..."
+    az role assignment create `
+        --assignee-object-id $SpObjectId `
+        --assignee-principal-type ServicePrincipal `
+        --role "Contributor" `
+        --scope $SubscriptionScope
+}
+else {
+    Write-Host "Contributor role assignment already exists at subscription scope; skipping create."
+}
+
+$RgContributorAssignment = az role assignment list `
     --assignee-object-id $SpObjectId `
     --scope $RgScope `
     --query "[?roleDefinitionName=='Contributor'] | [0].id" `
     -o tsv
 
-if (-not $ContributorAssignment) {
-    Write-Host "Assigning 'Contributor' role to service principal at scope $RgScope ..."
+if (-not $RgContributorAssignment) {
+    Write-Host "Assigning 'Contributor' role to service principal at resource group scope $RgScope ..."
     az role assignment create `
         --assignee-object-id $SpObjectId `
         --assignee-principal-type ServicePrincipal `
@@ -206,17 +227,35 @@ if (-not $ContributorAssignment) {
         --scope $RgScope
 }
 else {
-    Write-Host "Contributor role assignment already exists; skipping create."
+    Write-Host "Contributor role assignment already exists at resource-group scope; skipping create."
 }
 
-$UserAccessAdminAssignment = az role assignment list `
+$SubscriptionUserAccessAdminAssignment = az role assignment list `
+    --assignee-object-id $SpObjectId `
+    --scope $SubscriptionScope `
+    --query "[?roleDefinitionName=='User Access Administrator'] | [0].id" `
+    -o tsv
+
+if (-not $SubscriptionUserAccessAdminAssignment) {
+    Write-Host "Assigning 'User Access Administrator' role to service principal at subscription scope $SubscriptionScope ..."
+    az role assignment create `
+        --assignee-object-id $SpObjectId `
+        --assignee-principal-type ServicePrincipal `
+        --role "User Access Administrator" `
+        --scope $SubscriptionScope
+}
+else {
+    Write-Host "User Access Administrator role assignment already exists at subscription scope; skipping create."
+}
+
+$RgUserAccessAdminAssignment = az role assignment list `
     --assignee-object-id $SpObjectId `
     --scope $RgScope `
     --query "[?roleDefinitionName=='User Access Administrator'] | [0].id" `
     -o tsv
 
-if (-not $UserAccessAdminAssignment) {
-    Write-Host "Assigning 'User Access Administrator' role to service principal at scope $RgScope ..."
+if (-not $RgUserAccessAdminAssignment) {
+    Write-Host "Assigning 'User Access Administrator' role to service principal at resource group scope $RgScope ..."
     az role assignment create `
         --assignee-object-id $SpObjectId `
         --assignee-principal-type ServicePrincipal `
@@ -224,7 +263,7 @@ if (-not $UserAccessAdminAssignment) {
         --scope $RgScope
 }
 else {
-    Write-Host "User Access Administrator role assignment already exists; skipping create."
+    Write-Host "User Access Administrator role assignment already exists at resource-group scope; skipping create."
 }
 
 # -----------------------------

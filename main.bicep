@@ -109,9 +109,31 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
        tags: commonTags
 }
     
-// 3. DEV: Key Vault
+// 3a. DEV: Key Vault
 resource dev_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: 'sayyit-dev-kv'
+  location: locationRG
+  tags: commonTags
+  properties: {
+    tenantId: subscription().tenantId
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    enableRbacAuthorization: true
+    enabledForTemplateDeployment: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 30
+    publicNetworkAccess: 'Disabled'
+    networkAcls: {
+      defaultAction: 'Deny'
+      bypass: 'AzureServices'
+    }
+  }
+}
+// 3b. PROD: Key Vault
+resource prod_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: 'sayyit-prod-kv'
   location: locationRG
   tags: commonTags
   properties: {
