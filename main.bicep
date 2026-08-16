@@ -186,10 +186,20 @@ resource prod_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments
     principalType: 'ServicePrincipal'
   }
 }
-// 5. DEV: Allow the GitHub deployment identity to create/update secrets in the vault
+// 5a. DEV: Allow the GitHub deployment identity to create/update secrets in the DEV key vault
 resource dev_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(dev_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
   scope: dev_KeyVault
+  properties: {
+    roleDefinitionId: keyVaultSecretsOfficerRoleDefinitionId
+    principalId: deploymentPrincipalObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+// 5b. DEV: Allow the GitHub deployment identity to create/update secrets in the DEV key vault
+resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(prod_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
+  scope: prod_KeyVault
   properties: {
     roleDefinitionId: keyVaultSecretsOfficerRoleDefinitionId
     principalId: deploymentPrincipalObjectId
