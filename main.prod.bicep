@@ -192,13 +192,13 @@ resource externalIdTenant 'Microsoft.AzureActiveDirectory/ciamDirectories@2023-0
     }
   }
 } 
-// 10. DEV: sayyit-dev-web web app's registration in the external ID tenant
-resource dev_ExternalWebAppRegistration 'Microsoft.Graph/applications@v1.0' = if (modifyExternalIdTenant && env == 'dev'){
-  uniqueName: 'sayyit-web-dev'
-  displayName: 'sayyit-web-dev'
+// 10. sayyit-prod-web web app's registration in the external ID tenant
+resource prod_ExternalWebAppRegistration 'Microsoft.Graph/applications@v1.0' = if (modifyExternalIdTenant && env == 'prod'){
+  uniqueName: 'sayyit-web-prod'
+  displayName: 'sayyit-web-prod'
   signInAudience: 'AzureADandPersonalMicrosoftAccount'
 }
     
-output devKeyVaultName string = dev_KeyVault.name
-output devKeyVaultUri string = dev_KeyVault.properties.vaultUri
-output devWebAppPrincipalId string = dev_WebApp.identity.principalId
+output prodKeyVaultName string = prod_KeyVault.name
+output prodKeyVaultUri string = prod_KeyVault.properties.vaultUri
+output prodWebAppPrincipalId string = prod_WebApp.identity.principalId
