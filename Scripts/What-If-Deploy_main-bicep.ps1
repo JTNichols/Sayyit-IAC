@@ -3,8 +3,7 @@
 # .\What-If-Deploy_main-bicep.ps1 -SubscriptionId "<subscription-guid>" -AzureClientId "<app-client-id>" -EnvironmentName dev
 # app-client-id is the client id for sayyit-iac-github-actions app registered in EntraID
 # subscription id is for the sayyit subscription
-
-
+ 
 param(
 	[Parameter(Mandatory = $true)]
 	[string]$SubscriptionId,
