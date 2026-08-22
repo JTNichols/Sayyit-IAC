@@ -4,7 +4,7 @@ on:
   push:
     branches: [ env/dev, main ]
     paths:
-      - 'main.bicep'
+      - 'main.dev.bicep'
       - '.github/workflows/sayyit-iac-action.yml'
   workflow_dispatch:
 
@@ -58,7 +58,7 @@ jobs:
         with:
           inlineScript: |
             az bicep install
-            az bicep lint --file ./main.bicep
+            az bicep lint --file ./main.dev.bicep
 
       - name: Generate SQL password
         if: ${{ env.GENERATE_SQL_PASSWORD == 'true' }}
