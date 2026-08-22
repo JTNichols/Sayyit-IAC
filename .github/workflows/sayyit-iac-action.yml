@@ -5,6 +5,7 @@ on:
     branches: [ env/dev, main ]
     paths:
       - 'main.dev.bicep'
+      - 'main.prod.bicep'
       - '.github/workflows/sayyit-iac-action.yml'
   workflow_dispatch:
 

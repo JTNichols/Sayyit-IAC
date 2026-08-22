@@ -74,18 +74,8 @@ var sqlServerProperties = union({
 }, updatePassword ? {
   administratorLoginPassword: sqlServerAdministratorPassword
 } : {})
-
-// 1a. DEV: App Service Plan "sayyit-dev-asp"
-resource dev_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
-  name: 'sayyit-dev-asp'
-  location: locationWebApp
-  sku: {
-    name: 'F1'
-    tier: 'Free'
-  }
-  tags: commonTags
-}
-// 1b. PROD: App Service Plan "sayyit-prod-asp"
+ 
+// 1. App Service Plan "sayyit-prod-asp"
 resource prod_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: 'sayyit-prod-asp'
   location: locationWebApp
@@ -94,20 +84,9 @@ resource prod_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
     tier: 'Basic'
   }
   tags: commonTags
-}
-// 2a. DEV: Web App
-resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: 'sayyit-dev-web'
-  location: locationWebApp
-  identity: {
-      type: 'SystemAssigned'
-   }
-       properties: {
-         serverFarmId: dev_AppServicePlan.id
-       }
-       tags: commonTags
-}
-// 2b. PROD: Web App
+} 
+
+// 2. Web App
 resource prod_WebApp 'Microsoft.Web/sites@2023-12-01' = {
   name: 'sayyit-prod-web'
   location: locationWebApp
@@ -120,29 +99,7 @@ resource prod_WebApp 'Microsoft.Web/sites@2023-12-01' = {
        tags: commonTags
 }
 
-// 3a. DEV: Key Vault
-resource dev_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
-  name: 'sayyit-dev-kv'
-  location: locationRG
-  tags: commonTags
-  properties: {
-    tenantId: subscription().tenantId
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    enableRbacAuthorization: true
-    enabledForTemplateDeployment: true
-    enableSoftDelete: true
-    softDeleteRetentionInDays: 30
-    publicNetworkAccess: 'Disabled'
-    networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
-    }
-  }
-}
-// 3b. PROD: Key Vault
+// 3. Key Vault
 resource prod_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: 'sayyit-prod-kv'
   location: locationRG
@@ -165,17 +122,7 @@ resource prod_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   }
 }
     
-// 4a. DEV: Allow the Web App managed identity to read secret values
-resource dev_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(dev_KeyVault.id, dev_WebApp.id, 'KeyVaultSecretsUser')
-  scope: dev_KeyVault
-  properties: {
-    roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
-    principalId: dev_WebApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}    
-// 4b. PROD: Allow the Web App managed identity to read secret values
+// 4. Allow the Web App managed identity to read secret values
 resource prod_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(prod_KeyVault.id, prod_WebApp.id, 'KeyVaultSecretsUser')
   scope: prod_KeyVault
@@ -185,17 +132,8 @@ resource prod_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments
     principalType: 'ServicePrincipal'
   }
 }
-// 5a. DEV: Allow the GitHub deployment identity to create/update secrets in the DEV key vault
-resource dev_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(dev_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
-  scope: dev_KeyVault
-  properties: {
-    roleDefinitionId: keyVaultSecretsOfficerRoleDefinitionId
-    principalId: deploymentPrincipalObjectId
-    principalType: 'ServicePrincipal'
-  }
-}
-// 5b. DEV: Allow the GitHub deployment identity to create/update secrets in the DEV key vault
+  
+// 5. Allow the GitHub deployment identity to create/update secrets in the PROD key vault
 resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(prod_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
   scope: prod_KeyVault
@@ -205,37 +143,16 @@ resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssig
     principalType: 'ServicePrincipal'
   }
 }  
-
-// 6a. DEV: SQL Server
-resource dev_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
-  name: 'sayyit-dev-sqlserver'
-  location: locationSqlServer
-  tags: commonTags
-  properties: sqlServerProperties
-}
-// 6b. PROD: SQL Server
+ 
+// 6. SQL Server
 resource prod_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: 'sayyit-prod-sqlserver'
   location: locationSqlServer
   tags: commonTags
   properties: sqlServerProperties
 }
-// 7a. DEV: SQL Database
-resource dev_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
-  parent: dev_SqlServer
-  name: 'sayyit-dev-db'
-  location: locationSqlServer
-  tags: commonTags
-  sku: {
-    name: 'Basic'
-    tier: 'Basic'
-  }
-  properties: {
-    collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 2147483648
-  }
-}
-// 7b. PROD: SQL Database
+
+// 7. SQL Database
 resource prod_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: prod_SqlServer
   name: 'sayyit-prod-db'
@@ -250,9 +167,10 @@ resource prod_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' =
     maxSizeBytes: 2147483648
   }
 }
-// 8. DEV: SQL Server administrator password
-resource dev_SqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (updatePassword && env == 'dev') {
-  parent: dev_KeyVault
+
+// 8. SQL Server administrator password
+resource prod_SqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (updatePassword) {
+  parent: prod_KeyVault
   name: 'sqlServerAdministratorPassword'
   properties: {
     value: sqlServerAdministratorPassword

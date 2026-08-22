@@ -168,7 +168,7 @@ resource dev_SqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = 
   }
 } 
 // 8. SQL Server administrator password
-resource dev_SqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (updatePassword && env == 'dev') {
+resource dev_SqlAdminPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (updatePassword) {
   parent: dev_KeyVault
   name: 'sqlServerAdministratorPassword'
   properties: {
