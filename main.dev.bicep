@@ -10,11 +10,7 @@
 // 4. The GitHub Actions OIDC federated identity must already exist for the repo/branch combination. It's created
 //      by the script CreateEntraApp-ServPrinc-GhFedCred.ps1. That script creates an app registration and service
 //      principal in the Azure ExternalId tenant, which is passed into this bicep file as a parameter.
-
-
-// This script creates:
-// 1. App Service Plans "sayyit-{env}-asp"
-
+ 
 // Notes:
 // The web app is assigned a system managed identity and granted access to the key vault secrets. 
 // The SQL server administrator password is stored in the key vault as a secret.

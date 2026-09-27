@@ -1,6 +1,6 @@
 # This script bootstraps a Microsoft Entra app registration and service principal for GitHub Actions OIDC authentication.
 
-# It is run once per new GitHub repo/branch combination. 
+# It is run once per new GitHub repo. Unlike for pushes, PRs all use the same OIDC subject for every branch. 
 # It can also be re-run to update the RBAC roles of the Service principal for an existing combination of app+federated credential.
 # Prerequisites:
 #   1. Must be logged into Azure CLI w/ an account that has permission to create app registrations and service principals
@@ -17,7 +17,7 @@
 #    NOT the 'Name' of the federated credential. The Name is just a human-readable label & can be duplicated/changed.
 
  
-# example ./Create_Github_to_Azure_Credential.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
+# example ./GH_to_AZ_credential_PR.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
 #
 # **Run note**: regardless of what the repo name looks like in Github, the script will create a subject identifier with
 #               the repo name in lowercase, so this script must create a matching token with lower case, 
