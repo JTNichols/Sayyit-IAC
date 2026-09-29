@@ -99,6 +99,19 @@ resource prod_WebApp 'Microsoft.Web/sites@2023-12-01' = {
        tags: commonTags
 }
 
+// 2b. Web API
+resource prod_WebApi 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'sayyit-prod-api'
+  location: locationWebApp
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    serverFarmId: prod_AppServicePlan.id
+  }
+  tags: commonTags
+}
+
 // 3. Key Vault
 resource prod_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: 'sayyit-prod-kv'
