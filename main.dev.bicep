@@ -24,6 +24,8 @@ extension graphV1
 param env string
 param baseName string  
 param deploymentPrincipalObjectId string
+@secure()
+param AZURE_GITHUB_OIDC_SP_ID string
 @secure() 
 param sqlServerAdministratorPassword string = ''
 param updatePassword bool = false
@@ -62,6 +64,7 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
     )
+var githubOidcServicePrincipalObjectId = AZURE_GITHUB_OIDC_SP_ID
 var sqlServerProperties = union({
   administratorLogin: sqlServerAdminLoginName
   version: '12.0'
@@ -142,7 +145,18 @@ resource dev_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@
   }
 }
 
-// 5. Allow the GitHub deployment identity to create/update secrets in the DEV key vault
+// 5. Allow the GitHub OIDC service principal to read secrets in the DEV key vault
+resource dev_GitHubOidcPrincipalKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(dev_KeyVault.id, githubOidcServicePrincipalObjectId, 'GitHubOidcKeyVaultSecretsUser')
+  scope: dev_KeyVault
+  properties: {
+    roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
+    principalId: githubOidcServicePrincipalObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// 6. Allow the GitHub deployment identity to create/update secrets in the DEV key vault
 resource dev_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(dev_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
   scope: dev_KeyVault
@@ -153,7 +167,7 @@ resource dev_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssign
   }
 } 
 
-// 6. SQL Server
+// 7. SQL Server
 resource dev_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: 'sayyit-dev-sqlserver'
   location: locationSqlServer

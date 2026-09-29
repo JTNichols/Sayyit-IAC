@@ -1,0 +1,271 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.44.1.10279",
+      "templateHash": "11515151166590929795"
+    }
+  },
+  "parameters": {
+    "env": {
+      "type": "string"
+    },
+    "baseName": {
+      "type": "string"
+    },
+    "deploymentPrincipalObjectId": {
+      "type": "string"
+    },
+    "AZURE_GITHUB_OIDC_SP_ID": {
+      "type": "securestring"
+    },
+    "sqlServerAdministratorPassword": {
+      "type": "securestring",
+      "defaultValue": ""
+    },
+    "updatePassword": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "modifyExternalIdTenant": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "externalIdDataLocation": {
+      "type": "string",
+      "defaultValue": "United States"
+    },
+    "externalIdSkuName": {
+      "type": "string",
+      "defaultValue": "Base",
+      "allowedValues": [
+        "Base"
+      ]
+    },
+    "locationRG": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "locationWebApp": {
+      "type": "string",
+      "defaultValue": "centralus"
+    },
+    "locationSqlServer": {
+      "type": "string",
+      "defaultValue": "centralus"
+    },
+    "sqlServerAdminLoginName": {
+      "type": "string",
+      "defaultValue": "sqladminuser"
+    }
+  },
+  "variables": {
+    "commonTags": {
+      "project": "[parameters('baseName')]"
+    },
+    "keyVaultSecretsUserRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+    "keyVaultSecretsOfficerRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')]",
+    "githubOidcServicePrincipalObjectId": "[parameters('AZURE_GITHUB_OIDC_SP_ID')]",
+    "sqlServerProperties": "[union(createObject('administratorLogin', parameters('sqlServerAdminLoginName'), 'version', '12.0', 'minimumTlsVersion', '1.2', 'publicNetworkAccess', 'Disabled'), if(parameters('updatePassword'), createObject('administratorLoginPassword', parameters('sqlServerAdministratorPassword')), createObject()))]"
+  },
+  "imports": {
+    "graphV1": {
+      "provider": "MicrosoftGraph",
+      "version": "1.0.0"
+    }
+  },
+  "resources": {
+    "prod_AppServicePlan": {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-01-01",
+      "name": "sayyit-prod-asp",
+      "location": "[parameters('locationWebApp')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic"
+      },
+      "tags": "[variables('commonTags')]"
+    },
+    "prod_WebApp": {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "sayyit-prod-web",
+      "location": "[parameters('locationWebApp')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'sayyit-prod-asp')]"
+      },
+      "tags": "[variables('commonTags')]",
+      "dependsOn": [
+        "prod_AppServicePlan"
+      ]
+    },
+    "prod_WebApi": {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "sayyit-prod-api",
+      "location": "[parameters('locationWebApp')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'sayyit-prod-asp')]"
+      },
+      "tags": "[variables('commonTags')]",
+      "dependsOn": [
+        "prod_AppServicePlan"
+      ]
+    },
+    "prod_KeyVault": {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "sayyit-prod-kv",
+      "location": "[parameters('locationRG')]",
+      "tags": "[variables('commonTags')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "enableRbacAuthorization": true,
+        "enabledForTemplateDeployment": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 30,
+        "publicNetworkAccess": "Disabled",
+        "networkAcls": {
+          "defaultAction": "Deny",
+          "bypass": "AzureServices"
+        }
+      }
+    },
+    "prod_WebAppKeyVaultSecretsUser": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv')]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv'), resourceId('Microsoft.Web/sites', 'sayyit-prod-web'), 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultSecretsUserRoleDefinitionId')]",
+        "principalId": "[reference('prod_WebApp', '2023-12-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "prod_KeyVault",
+        "prod_WebApp"
+      ]
+    },
+    "prod_GitHubOidcPrincipalKeyVaultSecretsUser": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv')]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv'), variables('githubOidcServicePrincipalObjectId'), 'GitHubOidcKeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultSecretsUserRoleDefinitionId')]",
+        "principalId": "[variables('githubOidcServicePrincipalObjectId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "prod_KeyVault"
+      ]
+    },
+    "prod_GhDeployPrincipalSecretsOfficer": {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv')]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', 'sayyit-prod-kv'), parameters('deploymentPrincipalObjectId'), 'KeyVaultSecretsOfficer')]",
+      "properties": {
+        "roleDefinitionId": "[variables('keyVaultSecretsOfficerRoleDefinitionId')]",
+        "principalId": "[parameters('deploymentPrincipalObjectId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "prod_KeyVault"
+      ]
+    },
+    "prod_SqlServer": {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2023-08-01-preview",
+      "name": "sayyit-prod-sqlserver",
+      "location": "[parameters('locationSqlServer')]",
+      "tags": "[variables('commonTags')]",
+      "properties": "[variables('sqlServerProperties')]"
+    },
+    "prod_SqlDatabase": {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2023-08-01-preview",
+      "name": "[format('{0}/{1}', 'sayyit-prod-sqlserver', 'sayyit-prod-db')]",
+      "location": "[parameters('locationSqlServer')]",
+      "tags": "[variables('commonTags')]",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic"
+      },
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648
+      },
+      "dependsOn": [
+        "prod_SqlServer"
+      ]
+    },
+    "prod_SqlAdminPasswordSecret": {
+      "condition": "[parameters('updatePassword')]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', 'sayyit-prod-kv', 'sqlServerAdministratorPassword')]",
+      "properties": {
+        "value": "[parameters('sqlServerAdministratorPassword')]"
+      },
+      "dependsOn": [
+        "prod_KeyVault"
+      ]
+    },
+    "externalIdTenant": {
+      "condition": "[parameters('modifyExternalIdTenant')]",
+      "type": "Microsoft.AzureActiveDirectory/ciamDirectories",
+      "apiVersion": "2023-05-17-preview",
+      "name": "sayyit.onmicrosoft.com",
+      "location": "[parameters('externalIdDataLocation')]",
+      "tags": "[variables('commonTags')]",
+      "sku": {
+        "name": "[parameters('externalIdSkuName')]",
+        "tier": "A0"
+      },
+      "properties": {
+        "createTenantProperties": {
+          "displayName": "sayyit",
+          "countryCode": "US"
+        }
+      }
+    },
+    "prod_ExternalWebAppRegistration": {
+      "condition": "[and(parameters('modifyExternalIdTenant'), equals(parameters('env'), 'prod'))]",
+      "import": "graphV1",
+      "type": "Microsoft.Graph/applications@v1.0",
+      "properties": {
+        "uniqueName": "sayyit-web-prod",
+        "displayName": "sayyit-web-prod",
+        "signInAudience": "AzureADandPersonalMicrosoftAccount"
+      }
+    }
+  },
+  "outputs": {
+    "prodKeyVaultName": {
+      "type": "string",
+      "value": "sayyit-prod-kv"
+    },
+    "prodKeyVaultUri": {
+      "type": "string",
+      "value": "[reference('prod_KeyVault').vaultUri]"
+    },
+    "prodWebAppPrincipalId": {
+      "type": "string",
+      "value": "[reference('prod_WebApp', '2023-12-01', 'full').identity.principalId]"
+    }
+  }
+}

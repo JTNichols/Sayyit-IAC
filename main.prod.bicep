@@ -10,11 +10,7 @@
 // 4. The GitHub Actions OIDC federated identity must already exist for the repo/branch combination. It's created
 //      by the script CreateEntraApp-ServPrinc-GhFedCred.ps1. That script creates an app registration and service
 //      principal in the Azure ExternalId tenant, which is passed into this bicep file as a parameter.
-
-
-// This script creates:
-// 1. App Service Plans "sayyit-{env}-asp"
-
+ 
 // Notes:
 // The web app is assigned a system managed identity and granted access to the key vault secrets. 
 // The SQL server administrator password is stored in the key vault as a secret.
@@ -28,6 +24,8 @@ extension graphV1
 param env string
 param baseName string  
 param deploymentPrincipalObjectId string
+@secure()
+param AZURE_GITHUB_OIDC_SP_ID string
 @secure() 
 param sqlServerAdministratorPassword string = ''
 param updatePassword bool = false
@@ -66,6 +64,7 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
     'Microsoft.Authorization/roleDefinitions',
     'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
     )
+var githubOidcServicePrincipalObjectId = AZURE_GITHUB_OIDC_SP_ID
 var sqlServerProperties = union({
   administratorLogin: sqlServerAdminLoginName
   version: '12.0'
@@ -146,7 +145,18 @@ resource prod_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments
   }
 }
   
-// 5. Allow the GitHub deployment identity to create/update secrets in the PROD key vault
+// 5. Allow the GitHub OIDC service principal to read secrets in the PROD key vault
+resource prod_GitHubOidcPrincipalKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(prod_KeyVault.id, githubOidcServicePrincipalObjectId, 'GitHubOidcKeyVaultSecretsUser')
+  scope: prod_KeyVault
+  properties: {
+    roleDefinitionId: keyVaultSecretsUserRoleDefinitionId
+    principalId: githubOidcServicePrincipalObjectId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// 6. Allow the GitHub deployment identity to create/update secrets in the PROD key vault
 resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(prod_KeyVault.id, deploymentPrincipalObjectId, 'KeyVaultSecretsOfficer')
   scope: prod_KeyVault
@@ -157,7 +167,7 @@ resource prod_GhDeployPrincipalSecretsOfficer 'Microsoft.Authorization/roleAssig
   }
 }  
  
-// 6. SQL Server
+// 7. SQL Server
 resource prod_SqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: 'sayyit-prod-sqlserver'
   location: locationSqlServer
