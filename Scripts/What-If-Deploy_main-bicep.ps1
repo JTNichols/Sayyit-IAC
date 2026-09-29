@@ -33,9 +33,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Resolve main.bicep relative to this script, regardless of current working directory.
+# Resolve the environment-specific Bicep file relative to this script, regardless of current working directory.
 $ScriptDir = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
-$TemplateFile = Join-Path -Path (Split-Path -Path $ScriptDir -Parent) -ChildPath 'main.bicep'
+$TemplateFile = Join-Path -Path (Split-Path -Path $ScriptDir -Parent) -ChildPath "main.$EnvironmentName.bicep"
 
 if (-not (Test-Path -Path $TemplateFile)) {
 	throw "Could not find template file at '$TemplateFile'."
