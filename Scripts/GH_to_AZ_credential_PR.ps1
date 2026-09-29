@@ -15,7 +15,6 @@
 # 2. If not already existing for that repo/branch, it creates a new federated credential on the app registration for the 
 #    repo/branch combination. Note the script checks if the exact Subject identifier already exists on the app registration,
 #    NOT the 'Name' of the federated credential. The Name is just a human-readable label & can be duplicated/changed.
-
  
 # example ./GH_to_AZ_credential_PR.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
 #

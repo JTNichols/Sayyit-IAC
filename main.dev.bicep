@@ -82,9 +82,22 @@ resource dev_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   tags: commonTags
 }
  
-// 2. Web App
+// 2a. Web App
 resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
   name: 'sayyit-dev-web'
+  location: locationWebApp
+  identity: {
+      type: 'SystemAssigned'
+   }
+       properties: {
+         serverFarmId: dev_AppServicePlan.id
+       }
+       tags: commonTags
+} 
+
+// 2b. Web API
+resource dev_WebApi 'Microsoft.Web/sites@2023-12-01' = {
+  name: 'sayyit-dev-api'
   location: locationWebApp
   identity: {
       type: 'SystemAssigned'
@@ -116,8 +129,8 @@ resource dev_KeyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
       bypass: 'AzureServices'
     }
   }
-} 
-    
+}
+
 // 4. Allow the Web App managed identity to read secret values
 resource dev_WebAppKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(dev_KeyVault.id, dev_WebApp.id, 'KeyVaultSecretsUser')
