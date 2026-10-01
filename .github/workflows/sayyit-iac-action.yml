@@ -38,6 +38,7 @@ jobs:
           test -n "${{ secrets.AZURE_CLIENT_ID }}" && echo "CLIENT_ID set" || echo "CLIENT_ID missing"
           test -n "${{ secrets.AZURE_TENANT_ID }}" && echo "TENANT_ID set" || echo "TENANT_ID missing"
           test -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" && echo "SUBSCRIPTION_ID set" || echo "SUBSCRIPTION_ID missing"
+          test -n "${{ secrets.AZURE_GITHUB_OIDC_SP_ID }}" && echo "AZURE_GITHUB_OIDC_SP_ID set" || echo "AZURE_GITHUB_OIDC_SP_ID missing"
 
       - name: Azure login
         uses: azure/login@v2
@@ -109,6 +110,7 @@ jobs:
               --parameters env=$ENV_NAME \
                            baseName=$BASE_NAME \
                            deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
+                           AZURE_GITHUB_OIDC_SP_ID='${{ secrets.AZURE_GITHUB_OIDC_SP_ID }}' \
                            sqlServerAdministratorPassword=$sqlServerPassword \
                            modifyExternalIdTenant=$MODIFY_EXTERNAL_ID_TENANT \
                            updatePassword=$GENERATE_SQL_PASSWORD

@@ -58,3 +58,6 @@ yarn-error.log*
 
 # scripts
 *deploy.ps1
+
+# Copilot files
+copilot-secrets.md

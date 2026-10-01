@@ -5,7 +5,7 @@
 # Prerequisites:
 #   1. Must be logged into Azure CLI w/ an account that has permission to create app registrations and service principals
 #   2. The resource group must already exist in the current subscription 
-#      (therefore main.bicep can't create the RG in param -ResourceGroupName, tho it can modify it)
+#      (therefore main.bicep can't create the RG in param -ResourceGroupName, though it can modify it)
 
 # This script does the following:
 # 1. If not already existing for that repo, it creates a new app registration in EntraID external, and related service principal
@@ -17,7 +17,7 @@
 #    NOT the 'Name' of the federated credential. The Name is just a human-readable label & can be duplicated/changed.
 
  
-# example ./GH_to_AZ_credential_push.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
+# example: ./GH_to_AZ_credential_push.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
 # **Run note**: regardless of what the repo name looks like in Github, the script will create a subject identifier with
 #               the repo name in lowercase, so this script must create a matching token with lower case, 
 #               i.e -OwnerRepo "JTNichols/sayyit-iac"; not "JTNichols/Sayyit" or "JTNichols/Sayyit-IAC".
