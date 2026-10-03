@@ -1,4 +1,4 @@
-name: Deploy Sayyit Infrastructure
+name: Deploy Sayyit Infrastructure to Azure
 
 on: 
   push:

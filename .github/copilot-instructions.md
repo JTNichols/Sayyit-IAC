@@ -4,7 +4,8 @@
 This repository manages Azure infrastructure for Sayyit using Bicep, GitHub Actions, and PowerShell helper scripts.
 
 ## Secrets and keys
-- Refer to `.github/copilot-secrets.md` for any guidance related to secrets, credentials, keys, or other sensitive values.
+- Refer to `.github/copilot-secrets.md` for each request. It contains both secrets and sensitive values like Azure subscription IDs, client secrets, and other credentials. Ensure they are handled securely and not exposed in source control.
+- `.github/copilot-secrets.md` is on the `.gitignore` to prevent it from being committed to source control, so remember to keep it updated locally with relevant secrets or sensitive values as needed.
 - When working on changes that touch authentication, app registrations, Key Vault, GitHub secrets, or connection strings, follow `.github/copilot-secrets.md` in addition to these repo instructions.
 
 ## Key repo conventions

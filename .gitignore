@@ -58,6 +58,7 @@ yarn-error.log*
 
 # scripts
 *deploy.ps1
+azure_bootstrap.ps1
 
 # Copilot files
 copilot-secrets.md
