@@ -31,7 +31,7 @@ env:
   # Leave false during the first infrastructure deployment. Set true only when
   # intentionally creating or rotating the SQL logical-server administrator
   # password through Bicep.
-  GENERATE_SQL_PASSWORD: false
+  GENERATE_SQL_PASSWORD: true
 
   # External ID remains in sayyit.onmicrosoft.com and is not created or changed
   # by this workforce-tenant infrastructure workflow.
