@@ -62,3 +62,4 @@ yarn-error.log*
 
 # Copilot files
 copilot-secrets.md
+copilot-instructions.md

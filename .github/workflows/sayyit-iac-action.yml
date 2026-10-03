@@ -1,17 +1,22 @@
 name: Deploy Sayyit Infrastructure to Azure
 
-on: 
+on:
   push:
-    branches: [ env/dev ]
+    branches:
+      - env/dev
     paths:
-      - 'main.dev.bicep' 
+      - 'main.dev.bicep'
       - '.github/workflows/sayyit-iac-action.yml'
+
   pull_request:
-    branches: [ main ]
-    types: [ closed ]
-    paths: 
+    branches:
+      - main
+    types:
+      - closed
+    paths:
       - 'main.prod.bicep'
       - '.github/workflows/sayyit-iac-action.yml'
+
   workflow_dispatch:
 
 permissions:
@@ -19,58 +24,125 @@ permissions:
   contents: read
 
 env:
-  RESOURCE_GROUP: sayyit_rg1
+  RESOURCE_GROUP: sayyitadmin_rg1
   ENV_NAME: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
   BASE_NAME: sayyit
+
+  # Leave false during the first infrastructure deployment. Set true only when
+  # intentionally creating or rotating the SQL logical-server administrator
+  # password through Bicep.
   GENERATE_SQL_PASSWORD: false
+
+  # External ID remains in sayyit.onmicrosoft.com and is not created or changed
+  # by this workforce-tenant infrastructure workflow.
   MODIFY_EXTERNAL_ID_TENANT: false
 
 jobs:
   deploy:
+    name: Deploy ${{ github.ref_name == 'main' && 'prod' || 'dev' }} infrastructure
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Check Azure secrets presence
-        run: |
-          test -n "${{ secrets.AZURE_CLIENT_ID }}" && echo "CLIENT_ID set" || echo "CLIENT_ID missing"
-          test -n "${{ secrets.AZURE_TENANT_ID }}" && echo "TENANT_ID set" || echo "TENANT_ID missing"
-          test -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" && echo "SUBSCRIPTION_ID set" || echo "SUBSCRIPTION_ID missing"
-          test -n "${{ secrets.AZURE_GITHUB_OIDC_SP_ID }}" && echo "AZURE_GITHUB_OIDC_SP_ID set" || echo "AZURE_GITHUB_OIDC_SP_ID missing"
 
-      - name: Azure login
+      - name: Verify required GitHub Actions secrets are present
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -n "${{ secrets.AZURE_CLIENT_ID }}" \
+            && echo "AZURE_CLIENT_ID is set" \
+            || { echo "::error::AZURE_CLIENT_ID is missing."; exit 1; }
+
+          test -n "${{ secrets.AZURE_TENANT_ID }}" \
+            && echo "AZURE_TENANT_ID is set" \
+            || { echo "::error::AZURE_TENANT_ID is missing."; exit 1; }
+
+          test -n "${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
+            && echo "AZURE_SUBSCRIPTION_ID is set" \
+            || { echo "::error::AZURE_SUBSCRIPTION_ID is missing."; exit 1; }
+
+          test -n "${{ secrets.AZURE_GITHUB_OIDC_SP_ID }}" \
+            && echo "AZURE_GITHUB_OIDC_SP_ID is set" \
+            || { echo "::error::AZURE_GITHUB_OIDC_SP_ID is missing."; exit 1; }
+
+          test -n "${{ secrets.APPLICATION_GITHUB_OIDC_SP_ID }}" \
+            && echo "APPLICATION_GITHUB_OIDC_SP_ID is set" \
+            || { echo "::error::APPLICATION_GITHUB_OIDC_SP_ID is missing."; exit 1; }
+
+      - name: Azure login through GitHub OIDC
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Show Azure context
+      - name: Verify Azure tenant and subscription context
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az account show
+            set -e
 
-      - name: Ensure required resource providers are registered
+            az account show \
+              --query "{User:user.name,TenantId:tenantId,Subscription:name,SubscriptionId:id}" \
+              -o table
+
+            ACTUAL_TENANT_ID=$(az account show --query tenantId -o tsv)
+            ACTUAL_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+
+            test "$ACTUAL_TENANT_ID" = "${{ secrets.AZURE_TENANT_ID }}"
+            test "$ACTUAL_SUBSCRIPTION_ID" = "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+      - name: Ensure required Azure resource providers are registered
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az provider register --namespace Microsoft.KeyVault --wait
+            set -e
+
             az provider register --namespace Microsoft.Web --wait
+            az provider register --namespace Microsoft.Sql --wait
+            az provider register --namespace Microsoft.KeyVault --wait
+            az provider register --namespace Microsoft.Authorization --wait
 
-      - name: Lint Bicep
+            az provider show --namespace Microsoft.Web \
+              --query registrationState -o tsv
+
+            az provider show --namespace Microsoft.Sql \
+              --query registrationState -o tsv
+
+            az provider show --namespace Microsoft.KeyVault \
+              --query registrationState -o tsv
+
+            az provider show --namespace Microsoft.Authorization \
+              --query registrationState -o tsv
+
+      - name: Verify destination resource group exists
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az bicep install
-            az bicep lint --file ./main.dev.bicep
+            set -e
 
-      - name: Generate SQL password
+            az group show \
+              --name "${{ env.RESOURCE_GROUP }}" \
+              --query "{Name:name,Location:location,Id:id}" \
+              -o table
+
+      - name: Lint selected Bicep template
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -e
+
+            az bicep install
+            az bicep lint --file "./main.${{ env.ENV_NAME }}.bicep"
+
+      - name: Generate SQL administrator password
         if: ${{ env.GENERATE_SQL_PASSWORD == 'true' }}
         shell: bash
         run: |
+          set -euo pipefail
+
           python - <<'PY'
           import os
           import secrets
@@ -86,7 +158,7 @@ jobs:
               secrets.choice(upper),
               secrets.choice(digits),
               secrets.choice(special),
-            ]
+          ]
 
           alphabet = lower + upper + digits + special
           password.extend(secrets.choice(alphabet) for _ in range(20))
@@ -96,21 +168,59 @@ jobs:
               handle.write('sqlServerPassword=' + ''.join(password) + '\n')
           PY
 
-      - name: Deploy infrastructure
+      - name: Resolve IaC service principal object ID
+        id: iac-principal
         uses: azure/CLI@v2
         with:
           inlineScript: |
+            set -e
+
             DEPLOYMENT_PRINCIPAL_OBJECT_ID=$(az ad sp show \
               --id "${{ secrets.AZURE_CLIENT_ID }}" \
-              --query id -o tsv)
+              --query id \
+              -o tsv)
+
+            if [ -z "$DEPLOYMENT_PRINCIPAL_OBJECT_ID" ]; then
+              echo "::error::Could not resolve the IaC service principal object ID."
+              exit 1
+            fi
+
+            echo "Resolved IaC service principal object ID."
+
+            echo "deployment_principal_object_id=$DEPLOYMENT_PRINCIPAL_OBJECT_ID" \
+              >> "$GITHUB_OUTPUT"
+
+      - name: Deploy selected Bicep template
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -e
+
+            DEPLOYMENT_NAME="sayyit-${{ env.ENV_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}"
 
             az deployment group create \
-              --resource-group $RESOURCE_GROUP \
-              --template-file ./main.${ENV_NAME}.bicep \
-              --parameters env=$ENV_NAME \
-                           baseName=$BASE_NAME \
-                           deploymentPrincipalObjectId=$DEPLOYMENT_PRINCIPAL_OBJECT_ID \
-                           AZURE_GITHUB_OIDC_SP_ID='${{ secrets.AZURE_GITHUB_OIDC_SP_ID }}' \
-                           sqlServerAdministratorPassword=$sqlServerPassword \
-                           modifyExternalIdTenant=$MODIFY_EXTERNAL_ID_TENANT \
-                           updatePassword=$GENERATE_SQL_PASSWORD
+              --name "$DEPLOYMENT_NAME" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --template-file "./main.${{ env.ENV_NAME }}.bicep" \
+              --parameters \
+                env="${{ env.ENV_NAME }}" \
+                baseName="${{ env.BASE_NAME }}" \
+                deploymentPrincipalObjectId="${{ steps.iac-principal.outputs.deployment_principal_object_id }}" \
+                applicationDeploymentPrincipalObjectId="${{ secrets.APPLICATION_GITHUB_OIDC_SP_ID }}" \
+                sqlServerAdministratorPassword="${{ env.sqlServerPassword }}" \
+                modifyExternalIdTenant="${{ env.MODIFY_EXTERNAL_ID_TENANT }}" \
+                updatePassword="${{ env.GENERATE_SQL_PASSWORD }}" \
+              --only-show-errors
+
+      - name: Show deployment outputs
+        if: success()
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -e
+
+            az deployment group show \
+              --name "sayyit-${{ env.ENV_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --query properties.outputs \
+              -o jsonc
