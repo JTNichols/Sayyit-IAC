@@ -17,10 +17,10 @@
 #    NOT the 'Name' of the federated credential. The Name is just a human-readable label & can be duplicated/changed.
 
  
-# example: ./GH_to_AZ_credential_push.ps1 -OwnerRepo "JTNichols/sayyit" -EnvironmentName "dev" -ResourceGroupName "sayyit_rg1"
-# **Run note**: regardless of what the repo name looks like in Github, the script will create a subject identifier with
-#               the repo name in lowercase, so this script must create a matching token with lower case, 
-#               i.e -OwnerRepo "JTNichols/sayyit-iac"; not "JTNichols/Sayyit" or "JTNichols/Sayyit-IAC".
+# Example for the IaC repository:
+#   .\GH_to_AZ_credential_push.ps1 -OwnerRepo "JTNichols/Sayyit-IAC" -EnvironmentName "dev" -ResourceGroupName "sayyitadmin_rg1"
+# GitHub's OIDC subject is case-sensitive. Match the owner/repository casing shown
+# in the token subject emitted by the failed GitHub Actions run.
 param(
     [Parameter(Mandatory = $true)]
     [string]$OwnerRepo, # e.g. "JTNichols/Sayyit-IAC" or "JTNichols/sayyit"
@@ -34,7 +34,7 @@ param(
 # Verify Repo name
 $OwnerRepo = $OwnerRepo.Trim()
 if ($OwnerRepo -notmatch '^[^/\s]+/[^/\s]+$') {
-    throw "Repo must be in the format 'OWNER/REPO', for example 'JTNichols/sayyit-iac'."
+    throw "Repo must be in the format 'OWNER/REPO', for example 'JTNichols/Sayyit-IAC'."
 }
 
 # ----------
@@ -57,7 +57,7 @@ else {
 # 'Certificates & secrets' in the $AppName (e.g. 'sayyit-github-actions') app registration. 
 #     This is because the OIDC Subject identifier must be unique per federated credential, 
 #     and that Subject identifier must have the repo/branch in its name
-$AppName = "$Repo-github-actions"
+$AppName = "$($Repo.ToLowerInvariant())-github-actions"
 $Subject = "repo:${OwnerRepo}:ref:refs/heads/$Branch"
 Write-Host "Setting up OIDC identity for owner/repo '$OwnerRepo' branch '$Branch' on resource group '$ResourceGroupName'..."
 Write-Host "Expected federated credential subject: $Subject"
@@ -165,19 +165,29 @@ $federatedJson = @"
 "@
 
 $fcPath = ".\federated-credential.json"
-$federatedJson | Set-Content -Path $fcPath -Encoding UTF8
 
  $ExistingFederatedCredentials = az ad app federated-credential list `
     --id $AppObjectId `
     -o json | ConvertFrom-Json
 
 $ExistingFederatedCredential = $ExistingFederatedCredentials | Where-Object {
-    $_.name -eq $CredentialName -or $_.subject -eq $Subject
+    $_.issuer -ceq 'https://token.actions.githubusercontent.com' -and
+    $_.subject -ceq $Subject -and
+    @($_.audiences) -ccontains 'api://AzureADTokenExchange'
 } | Select-Object -First 1
     
 Write-Host "DEBUG: ExistingFederatedCredential=$($ExistingFederatedCredential.name)"
 
 if (-not $ExistingFederatedCredential) {
+    if ($ExistingFederatedCredentials | Where-Object { $_.name -ieq $CredentialName }) {
+        $CredentialName = "$CredentialName-ExactCase"
+        if ($ExistingFederatedCredentials | Where-Object { $_.name -ieq $CredentialName }) {
+            throw "A federated credential named '$CredentialName' already exists with a different subject. Rename or remove that credential, then retry."
+        }
+    }
+
+    $federatedJson = $federatedJson -replace '"name": "[^"]+"', ('"name": "' + $CredentialName + '"')
+    $federatedJson | Set-Content -Path $fcPath -Encoding UTF8
     Write-Host "Creating federated credential '$CredentialName' on app '$AppObjectId' for subject $Subject ..."
 
     az ad app federated-credential create `

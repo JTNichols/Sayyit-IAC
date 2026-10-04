@@ -2,9 +2,11 @@
 
 ## Repository purpose
 This repository manages Azure infrastructure for Sayyit using Bicep, GitHub Actions, and PowerShell helper scripts.
+The Azure tenant is named `sayyitadmin.onmicrosoft.com` with one resource group, sayyitadmin_rg1. 
 
 ## Secrets and keys
-- Refer to `.github/copilot-secrets.md` for any guidance related to secrets, credentials, keys, or other sensitive values.
+- Refer to `.github/copilot-secrets.md` for each request. It contains both secrets and sensitive values like Azure subscription IDs, client secrets, and other credentials. Ensure they are handled securely and not exposed in source control.
+- `.github/copilot-secrets.md` is on the `.gitignore` to prevent it from being committed to source control, so remember to keep it updated locally with relevant secrets or sensitive values as needed.
 - When working on changes that touch authentication, app registrations, Key Vault, GitHub secrets, or connection strings, follow `.github/copilot-secrets.md` in addition to these repo instructions.
 
 ## Key repo conventions
@@ -20,21 +22,20 @@ This repository manages Azure infrastructure for Sayyit using Bicep, GitHub Acti
 - Dev deploys are driven by pushes to `env/dev`.
 - Prod deploys are driven by closed pull requests into `main`.
 - The workflow selects `main.dev.bicep` or `main.prod.bicep` based on environment.
-- The resource group `sayyit_rg1` is expected to already exist.
-- Azure identity for deployment is provided through GitHub OIDC, not long-lived secrets.
+- The resource group `sayyitadmin_rg1` is expected to already exist.
+- Azure identity for deployment is provided through GitHub OIDC with federated credentials, not long-lived secrets.
 
 ## Bicep guidance
 - Keep parameter names and meanings consistent across dev and prod templates.
 - When adding a resource to one environment, consider whether the corresponding resource should exist in the other environment too.
 - Prefer Azure RBAC-based access patterns already used in this repo.
 - Do not switch existing networking, Key Vault, SQL, or App Service patterns unless requested.
-- Treat `Microsoft.AzureActiveDirectory/ciamDirectories` as External ID customer tenant configuration, not a standard workforce Entra tenant.
-- If adding Azure SQL Entra administrator support, model it explicitly through SQL server administrator resources instead of replacing unrelated SQL configuration.
+
 
 ## PowerShell guidance
 - Follow the style used in the `Scripts` directory: explicit prerequisites, clear `Write-Host` progress messages, and defensive validation.
 - Write idempotent scripts where possible.
-- Assume scripts are run manually by an operator who is already authenticated with Azure CLI.
+- Assume scripts are run manually by an operator who is already authenticated with Azure CLI and Github CLI.
 - Avoid interactive prompts unless the task explicitly calls for them.
 
 ## Validation expectations
