@@ -326,8 +326,8 @@ resource dev_WebApiKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@
 // from the vault before using SqlPackage to deploy the DACPAC.
 resource dev_ApplicationDeploymentPrincipalKeyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(
-    dev_KeyVault.id
-    applicationDeploymentPrincipalObjectId
+    dev_KeyVault.id,
+    applicationDeploymentPrincipalObjectId,
     'ApplicationDeploymentPrincipalKeyVaultSecretsUser'
   )
   scope: dev_KeyVault
@@ -344,8 +344,8 @@ resource dev_ApplicationDeploymentPrincipalKeyVaultSecretsUser 'Microsoft.Author
 // sqlServerAdministratorPassword through this Bicep template.
 resource dev_IacPrincipalKeyVaultSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(
-    dev_KeyVault.id
-    deploymentPrincipalObjectId
+    dev_KeyVault.id,
+    deploymentPrincipalObjectId,
     'IacPrincipalKeyVaultSecretsOfficer'
   )
   scope: dev_KeyVault
