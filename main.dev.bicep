@@ -14,8 +14,8 @@
 //
 // This template creates:
 //   - App Service plan:      sayyit-dev-asp
-//   - Blazor WASM web app:   sayyit-dev-web
-//   - ASP.NET Core API:      sayyit-dev-api
+//   - Blazor WASM web app:   sayyit-dev-webapp (renamed from -web b/c or soft-deleted name exists in previous tenant. may rename later)
+//   - ASP.NET Core API:      sayyit-dev-apiapp (same)
 //   - Key Vault:             sayyit-dev-kv
 //   - Azure SQL server:      sayyit-dev-sqlserver
 //   - Azure SQL database:    sayyit-dev-db
@@ -98,8 +98,8 @@ param externalIdWebClientId string = '0becd0dd-685a-4825-98c1-5ce259fd0ff8'
 // -----------------------------------------------------------------------------
 
 var appServicePlanName = '${baseName}-${env}-asp'
-var webAppName = '${baseName}-${env}-web'
-var apiAppName = '${baseName}-${env}-api'
+var webAppName = '${baseName}-${env}-webapp'
+var apiAppName = '${baseName}-${env}-apiapp'
 var keyVaultName = '${baseName}-${env}-kv'
 var sqlServerName = '${baseName}-${env}-sqlserver'
 var sqlDatabaseName = '${baseName}-${env}-db'
