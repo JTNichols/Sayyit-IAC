@@ -97,6 +97,12 @@ param externalIdWebClientId string = 'c295581c-0119-44fa-a582-0bbf0404dbbc'
 param externalIdApiClientId string = '44fc74ec-e252-4dcf-8590-7b00633d3a1e'
 param externalIdApiScope string = 'api://${externalIdApiClientId}/access_as_user'
 
+// Allowed CORS origins for the API App Service (sayyit-prod-apiapp).
+// Includes the deployed production webapp.
+param apiCorsAllowedOrigins array = [
+  'https://sayyit-prod-webapp.azurewebsites.net'
+]
+
 // -----------------------------------------------------------------------------
 // Variables
 // -----------------------------------------------------------------------------
@@ -252,9 +258,7 @@ resource prod_WebApiCors 'Microsoft.Web/sites/config@2023-12-01' = {
   name: 'web'
   properties: {
     cors: {
-      allowedOrigins: [
-        'https://${webAppName}.azurewebsites.net'
-      ]
+      allowedOrigins: apiCorsAllowedOrigins
       supportCredentials: true
     }
   }
