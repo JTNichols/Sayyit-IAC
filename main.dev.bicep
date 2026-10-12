@@ -231,10 +231,6 @@ resource dev_WebApi 'Microsoft.Web/sites@2023-12-01' = {
       http20Enabled: true
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
-      cors: {
-        allowedOrigins: apiCorsAllowedOrigins
-        supportCredentials: true
-      }
     }
   }
   tags: commonTags
