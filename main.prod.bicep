@@ -93,6 +93,10 @@ param sqlServerAdminLoginName string = 'sqladminuser'
 param externalIdAuthority string = 'https://sayyit.ciamlogin.com'
 param externalIdWebClientId string = 'c295581c-0119-44fa-a582-0bbf0404dbbc'
 
+// Prod API app registration (sayyit-prod-apiapp), created by Scripts/azure_sayyit_bootstrap.ps1.
+param externalIdApiClientId string = '44fc74ec-e252-4dcf-8590-7b00633d3a1e'
+param externalIdApiScope string = 'api://${externalIdApiClientId}/access_as_user'
+
 // -----------------------------------------------------------------------------
 // Variables
 // -----------------------------------------------------------------------------
@@ -190,6 +194,7 @@ resource prod_WebAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     AzureAd__Authority: externalIdAuthority
     AzureAd__ClientId: externalIdWebClientId
+    AzureAd__ApiScope: externalIdApiScope
     AzureAd__ValidateAuthority: 'true'
   }
 }
@@ -234,7 +239,7 @@ resource prod_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     Sayyit__SqlServerFqdn: '${sqlServerName}.database.windows.net'
     Sayyit__WebOrigin: 'https://${webAppName}.azurewebsites.net'
     AzureAd__Authority: externalIdAuthority
-    AzureAd__Audience: externalIdWebClientId
+    AzureAd__Audience: externalIdApiClientId
     AzureAd__ValidateAuthority: 'true'
   }
 }
