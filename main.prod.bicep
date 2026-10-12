@@ -91,7 +91,7 @@ param sqlServerAdminLoginName string = 'sqladminuser'
 
 // Existing, preserved customer-facing External ID configuration.
 param externalIdAuthority string = 'https://sayyit.ciamlogin.com'
-param externalIdWebClientId string = '0becd0dd-685a-4825-98c1-5ce259fd0ff8'
+param externalIdWebClientId string = 'c295581c-0119-44fa-a582-0bbf0404dbbc'
 
 // -----------------------------------------------------------------------------
 // Variables
