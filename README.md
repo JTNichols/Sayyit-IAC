@@ -13,6 +13,7 @@ The current repo includes these key files:
 - `.github/workflows/sayyit-iac-action.yml` - GitHub Actions workflow that deploys infrastructure
 - `Scripts/GH_to_AZ_credential_PR.ps1` - bootstraps GitHub OIDC for pull request-based deployment
 - `Scripts/GH_to_AZ_credential_push.ps1` - bootstraps GitHub OIDC for push-based branch deployment
+- `Scripts/azure_sayyit_bootstrap.ps1` - verifies or creates the External ID app registration (`-AppRegisteredName` display name, tenant `sayyit.onmicrosoft.com`) and adds the Blazor `/authentication/login-callback` and `/authentication/logout-callback` SPA redirect URIs (run manually after `az login --tenant sayyit.onmicrosoft.com --allow-no-subscriptions`; pass `-Environment dev` or `-Environment prod`; one environment per run)
 - `Scripts/What-If-Deploy_main-bicep.ps1` - runs a what-if deployment against the environment-specific template
 
 ---
