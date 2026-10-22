@@ -97,6 +97,14 @@ param externalIdWebClientId string = '0becd0dd-685a-4825-98c1-5ce259fd0ff8'
 param externalIdApiClientId string = '63856534-5fcc-44bf-86b9-6f98c420ec4a'
 param externalIdApiScope string = 'api://${externalIdApiClientId}/access_as_user'
 
+// Allowed CORS origins for the API App Service (sayyit-dev-apiapp).
+// Includes local development origins for Blazor WASM and the deployed dev webapp.
+param apiCorsAllowedOrigins array = [
+  'https://localhost:7082'
+  'https://localhost:7176'
+  'https://sayyit-dev-webapp.azurewebsites.net'
+]
+
 // -----------------------------------------------------------------------------
 // Variables
 // -----------------------------------------------------------------------------
@@ -248,16 +256,14 @@ resource dev_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   }
 }
 
-// Explicitly allow only the dev Blazor WebAssembly application to call the API.
+// Explicitly allow only the dev Blazor WebAssembly application and local dev to call the API.
 // Add a custom-domain origin only after it exists and has been verified.
 resource dev_WebApiCors 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: dev_WebApi
   name: 'web'
   properties: {
     cors: {
-      allowedOrigins: [
-        'https://${webAppName}.azurewebsites.net'
-      ]
+      allowedOrigins: apiCorsAllowedOrigins
       supportCredentials: true
     }
   }

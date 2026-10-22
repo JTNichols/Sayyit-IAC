@@ -4,19 +4,12 @@ on:
   push:
     branches:
       - env/dev
+      - main
     paths:
       - 'main.dev.bicep'
-      - '.github/workflows/sayyit-iac-action.yml'
-
-  pull_request:
-    branches:
-      - main
-    types:
-      - closed
-    paths:
       - 'main.prod.bicep'
       - '.github/workflows/sayyit-iac-action.yml'
-
+ 
   workflow_dispatch:
 
 permissions:
@@ -40,8 +33,10 @@ env:
 jobs:
   deploy:
     name: Deploy ${{ github.ref_name == 'main' && 'prod' || 'dev' }} infrastructure
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
-
+    environment:
+      name: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
