@@ -21,6 +21,7 @@
 //   - Azure SQL database:    sayyit-dev-db
 //   - Key Vault RBAC assignments
 //   - Temporary SQL firewall rule for the administrator IP
+//   - SQL Microsoft Entra administrator assignment to an existing workforce group
 //
 // This template does NOT create or modify:
 //   - sayyit.onmicrosoft.com External ID.
@@ -89,6 +90,17 @@ param administratorPublicIpAddress string = '174.104.161.188'
 // Existing SQL administrator login name. Its password is stored in Key Vault.
 param sqlServerAdminLoginName string = 'sqladminuser'
 
+// Existing workforce-tenant security group, created by
+// azure_sayyitadmin_bootstrap.ps1 and supplied by the IaC workflow.
+@description('Display name of the workforce Entra SQL administrator group.')
+@minLength(1)
+param sqlEntraAdminGroupName string
+
+@description('Object ID of the workforce Entra SQL administrator group.')
+@minLength(36)
+@maxLength(36)
+param sqlEntraAdminGroupObjectId string
+
 // Existing, preserved customer-facing External ID configuration.
 param externalIdAuthority string = 'https://sayyit.ciamlogin.com'
 param externalIdWebClientId string = '0becd0dd-685a-4825-98c1-5ce259fd0ff8'
@@ -144,11 +156,20 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
 // Temporary development/bootstrap configuration. The database workflow adds a
 // short-lived GitHub-hosted runner firewall rule and restores the original
 // public-network setting after deployment.
+// Assigns Azure Group as sql admin
 var sqlServerProperties = union({
   administratorLogin: sqlServerAdminLoginName
   version: '12.0'
   minimumTlsVersion: '1.2'
   publicNetworkAccess: 'Enabled'
+
+  administrators: {
+    administratorType: 'ActiveDirectory'
+    principalType: 'Group'
+    login: sqlEntraAdminGroupName
+    sid: sqlEntraAdminGroupObjectId
+    tenantId: subscription().tenantId
+  }
 }, updatePassword ? {
   administratorLoginPassword: sqlServerAdministratorPassword
 } : {})
