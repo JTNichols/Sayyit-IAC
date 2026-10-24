@@ -207,24 +207,27 @@ jobs:
 
       - name: Deploy selected Bicep template
         uses: azure/CLI@v2
+        env:
+          SQL_ENTRA_ADMIN_GROUP_NAME: ${{ vars.SQL_ENTRA_ADMIN_GROUP_NAME }}
+          SQL_ENTRA_ADMIN_GROUP_OBJECT_ID: ${{ vars.SQL_ENTRA_ADMIN_GROUP_OBJECT_ID }}
         with:
           inlineScript: |
-            set -e
+            set -euo pipefail
 
             DEPLOYMENT_NAME="sayyit-${{ env.ENV_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}"
 
-            az deployment group create \
-              --name "$DEPLOYMENT_NAME" \
+            az deployment group create --name "$DEPLOYMENT_NAME" \
               --resource-group "${{ env.RESOURCE_GROUP }}" \
               --template-file "./main.${{ env.ENV_NAME }}.bicep" \
-              --parameters \
-                env="${{ env.ENV_NAME }}" \
+              --parameters env="${{ env.ENV_NAME }}" \
                 baseName="${{ env.BASE_NAME }}" \
                 deploymentPrincipalObjectId="${{ steps.iac-principal.outputs.deployment_principal_object_id }}" \
                 applicationDeploymentPrincipalObjectId="${{ secrets.APPLICATION_GITHUB_OIDC_SP_ID }}" \
                 sqlServerAdministratorPassword="${{ env.sqlServerPassword }}" \
                 modifyExternalIdTenant="${{ env.MODIFY_EXTERNAL_ID_TENANT }}" \
                 updatePassword="${{ env.GENERATE_SQL_PASSWORD }}" \
+                sqlEntraAdminGroupName="$SQL_ENTRA_ADMIN_GROUP_NAME" \
+                sqlEntraAdminGroupObjectId="$SQL_ENTRA_ADMIN_GROUP_OBJECT_ID" \
               --only-show-errors
 
       - name: Show deployment outputs
