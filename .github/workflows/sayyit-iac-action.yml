@@ -32,8 +32,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy ${{ github.ref_name == 'main' && 'prod' || 'dev' }} infrastructure
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.merged == true }}
+    name: Deploy ${{ github.ref_name == 'main' && 'prod' || 'dev' }} infrastructure 
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
@@ -65,6 +64,27 @@ jobs:
           test -n "${{ secrets.APPLICATION_GITHUB_OIDC_SP_ID }}" \
             && echo "APPLICATION_GITHUB_OIDC_SP_ID is set" \
             || { echo "::error::APPLICATION_GITHUB_OIDC_SP_ID is missing."; exit 1; }
+
+      - name: Verify SQL Entra administrator environment variables
+        shell: bash
+        env:
+          SQL_ENTRA_ADMIN_GROUP_NAME: ${{ vars.SQL_ENTRA_ADMIN_GROUP_NAME }}
+          SQL_ENTRA_ADMIN_GROUP_OBJECT_ID: ${{ vars.SQL_ENTRA_ADMIN_GROUP_OBJECT_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${SQL_ENTRA_ADMIN_GROUP_NAME//[[:space:]]/}" ]]; then
+            echo "::error::SQL_ENTRA_ADMIN_GROUP_NAME is missing or blank for the selected GitHub environment."
+            exit 1
+          fi
+
+          if [[ ! "$SQL_ENTRA_ADMIN_GROUP_OBJECT_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+            echo "::error::SQL_ENTRA_ADMIN_GROUP_OBJECT_ID is missing or is not a valid GUID."
+            exit 1
+          fi
+
+          printf 'SQL Entra administrator group: %s\n' "$SQL_ENTRA_ADMIN_GROUP_NAME"
+          printf 'SQL Entra administrator object ID: %s\n' "$SQL_ENTRA_ADMIN_GROUP_OBJECT_ID"
 
       - name: Azure login through GitHub OIDC
         uses: azure/login@v2
