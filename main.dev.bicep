@@ -169,9 +169,6 @@ var sqlServerProperties = union({
     login: sqlEntraAdminGroupName
     sid: sqlEntraAdminGroupObjectId
     tenantId: subscription().tenantId
-
-    // Preserve SQL authentication for the existing deployment process.
-    azureADOnlyAuthentication: false
   }
 }, updatePassword ? {
   administratorLoginPassword: sqlServerAdministratorPassword
