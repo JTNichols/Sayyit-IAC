@@ -1,6 +1,6 @@
 // main.dev.bicep
 //
-// Sayyit development environment infrastructure.
+// Sayyit "dev" environment infrastructure.
 //
 // Target workforce tenant:
 //   sayyitadmin.onmicrosoft.com
@@ -110,7 +110,7 @@ param externalIdApiClientId string = '63856534-5fcc-44bf-86b9-6f98c420ec4a'
 param externalIdApiScope string = 'api://${externalIdApiClientId}/access_as_user'
 
 // Allowed CORS origins for the API App Service (sayyit-dev-apiapp).
-// Includes local development origins for Blazor WASM and the deployed dev webapp.
+// Includes local "development" environment origins for Blazor WASM and the deployed dev webapp.
 param apiCorsAllowedOrigins array = [
   'https://localhost:7082'
   'https://localhost:7176'
@@ -175,7 +175,7 @@ var sqlServerProperties = union({
 } : {})
 
 // -----------------------------------------------------------------------------
-// 1. Shared development App Service plan
+// 1. Shared "dev" environment App Service plan
 // -----------------------------------------------------------------------------
 
 resource dev_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
@@ -193,7 +193,7 @@ resource dev_AppServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
 }
 
 // -----------------------------------------------------------------------------
-// 2. Blazor WebAssembly web application
+// 2. Blazor WebAssembly "dev" environment web application
 // -----------------------------------------------------------------------------
 
 resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -218,11 +218,12 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
 }
 
 // Blazor WebAssembly is client-side. Do not add SQL credentials to this app.
+// Note: ASPNETCORE_ENVIRONMENT is for labeling, the browser environment is set by publishing.
 resource dev_WebAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: dev_WebApp
   name: 'appsettings'
   properties: {
-    ASPNETCORE_ENVIRONMENT: 'Development'
+    ASPNETCORE_ENVIRONMENT: 'Dev'
     Sayyit__Environment: env
     Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     AzureAd__Authority: externalIdAuthority
@@ -264,7 +265,7 @@ resource dev_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: dev_WebApi
   name: 'appsettings'
   properties: {
-    ASPNETCORE_ENVIRONMENT: 'Development'
+    ASPNETCORE_ENVIRONMENT: 'Dev'
     Sayyit__Environment: env
     Sayyit__KeyVaultUri: dev_KeyVault.properties.vaultUri
     Sayyit__SqlServerName: sqlServerName
