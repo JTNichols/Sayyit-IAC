@@ -211,31 +211,30 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
       alwaysOn: false
       http20Enabled: true
       minTlsVersion: '1.2'
-      ftpsState: 'Disabled'
+      ftpsState: 'Disabled' 
+      ASPNETCORE_ENVIRONMENT: 'Dev'
     }
   }
   tags: commonTags
 }
 
-// Note: ASPNETCORE_ENVIRONMENT is for labeling in Azure portal only, the browser's environment is set by publishing.
-resource dev_WebAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
-  parent: dev_WebApp
-  name: 'appsettings'
-  properties: {
-    ASPNETCORE_ENVIRONMENT: 'Dev'
-    // Sayyit__Environment: env
-    // Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
-    // AzureAd__Authority: externalIdAuthority
-    // AzureAd__ClientId: externalIdWebClientId
-    // AzureAd__ApiScope: externalIdApiScope
-    // AzureAd__ValidateAuthority: 'true'
-  }
-}
+// // Note: ASPNETCORE_ENVIRONMENT is for labeling in Azure portal only, the browser's environment is set by publishing.
+// resource dev_WebAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
+//   parent: dev_WebApp
+//   name: 'appsettings'
+//   properties: {
+//     // Sayyit__Environment: env
+//     // Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
+//     // AzureAd__Authority: externalIdAuthority
+//     // AzureAd__ClientId: externalIdWebClientId
+//     // AzureAd__ApiScope: externalIdApiScope
+//     // AzureAd__ValidateAuthority: 'true'
+//   }
+// }
 
 // -----------------------------------------------------------------------------
-// 3. ASP.NET Core REST API application
+// 3. ASP.NET Core REST API 
 // -----------------------------------------------------------------------------
-
 resource dev_WebApi 'Microsoft.Web/sites@2023-12-01' = {
   name: apiAppName
   location: locationWebApp
@@ -257,7 +256,7 @@ resource dev_WebApi 'Microsoft.Web/sites@2023-12-01' = {
   tags: commonTags
 }
 
-// No SQL password is stored in App Service configuration. The API should use
+// No SQL password is stored in App Service configuration. API uses
 // its system-assigned managed identity to retrieve a connection secret from
 // Key Vault, or later use passwordless Azure SQL authentication.
 resource dev_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
