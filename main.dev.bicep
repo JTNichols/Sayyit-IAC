@@ -217,19 +217,18 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
   tags: commonTags
 }
 
-// Blazor WebAssembly is client-side. Do not add SQL credentials to this app.
-// Note: ASPNETCORE_ENVIRONMENT is for labeling, the browser environment is set by publishing.
+// Note: ASPNETCORE_ENVIRONMENT is for labeling in Azure portal only, the browser's environment is set by publishing.
 resource dev_WebAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: dev_WebApp
   name: 'appsettings'
   properties: {
     ASPNETCORE_ENVIRONMENT: 'Dev'
-    Sayyit__Environment: env
-    Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
-    AzureAd__Authority: externalIdAuthority
-    AzureAd__ClientId: externalIdWebClientId
-    AzureAd__ApiScope: externalIdApiScope
-    AzureAd__ValidateAuthority: 'true'
+    // Sayyit__Environment: env
+    // Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
+    // AzureAd__Authority: externalIdAuthority
+    // AzureAd__ClientId: externalIdWebClientId
+    // AzureAd__ApiScope: externalIdApiScope
+    // AzureAd__ValidateAuthority: 'true'
   }
 }
 
