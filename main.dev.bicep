@@ -211,8 +211,7 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
       alwaysOn: false
       http20Enabled: true
       minTlsVersion: '1.2'
-      ftpsState: 'Disabled' 
-      ASPNETCORE_ENVIRONMENT: 'Dev'
+      ftpsState: 'Disabled'
     }
   }
   tags: commonTags
@@ -223,6 +222,7 @@ resource dev_WebApp 'Microsoft.Web/sites@2023-12-01' = {
 //   parent: dev_WebApp
 //   name: 'appsettings'
 //   properties: {
+//     ASPNETCORE_ENVIRONMENT: 'Dev'
 //     // Sayyit__Environment: env
 //     // Sayyit__ApiBaseUrl: 'https://${apiAppName}.azurewebsites.net'
 //     // AzureAd__Authority: externalIdAuthority
