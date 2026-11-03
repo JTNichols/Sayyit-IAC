@@ -153,7 +153,7 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
 var sqlServerProperties = union({
   administratorLogin: sqlServerAdminLoginName
   version: '12.0'
-  minimumTlsVersion: '1.2'
+  minimalTlsVersion: '1.2'
   publicNetworkAccess: 'Enabled'
 
   administrators: {

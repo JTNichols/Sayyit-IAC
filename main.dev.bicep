@@ -160,7 +160,7 @@ var keyVaultSecretsOfficerRoleDefinitionId = subscriptionResourceId(
 var sqlServerProperties = union({
   administratorLogin: sqlServerAdminLoginName
   version: '12.0'
-  minimumTlsVersion: '1.2'
+  minimalTlsVersion: '1.2'
   publicNetworkAccess: 'Enabled'
 
   administrators: {
@@ -256,9 +256,7 @@ resource dev_WebApi 'Microsoft.Web/sites@2023-12-01' = {
   tags: commonTags
 }
 
-// No SQL password is stored in App Service configuration. API uses
-// its system-assigned managed identity to retrieve a connection secret from
-// Key Vault, or later use passwordless Azure SQL authentication.
+// API App Settings
 resource dev_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   parent: dev_WebApi
   name: 'appsettings'
