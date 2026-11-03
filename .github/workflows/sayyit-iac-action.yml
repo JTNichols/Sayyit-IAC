@@ -268,13 +268,12 @@ jobs:
 
       - name: Show deployment outputs
         if: success()
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            set -e
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $deploymentName = "sayyit-${{ env.ENV_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          az deployment group show --name $deploymentName --resource-group "${{ env.RESOURCE_GROUP }}" --query properties.outputs --output json
 
-            az deployment group show \
-              --name "sayyit-${{ env.ENV_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}" \
-              --resource-group "${{ env.RESOURCE_GROUP }}" \
-              --query properties.outputs \
-              -o jsonc
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to retrieve outputs for deployment '$deploymentName'."
+          }
