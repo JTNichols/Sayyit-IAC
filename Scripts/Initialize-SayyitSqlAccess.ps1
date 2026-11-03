@@ -421,3 +421,14 @@ finally {
 if ($null -ne $failure) {
     throw $failure
 }
+
+# following query will verify permissions:
+# EXECUTE AS USER = N'sayyit-dev-apiapp';
+
+# SELECT
+#     USER_NAME() AS EffectiveDatabaseUser,
+#     HAS_PERMS_BY_NAME(N'auth.Users', N'OBJECT', N'SELECT') AS CanSelectUsers,
+#     HAS_PERMS_BY_NAME(N'auth.Users', N'OBJECT', N'INSERT') AS CanInsertUsers,
+#     HAS_PERMS_BY_NAME(N'auth.Users', N'OBJECT', N'UPDATE') AS CanUpdateUsers;
+
+# REVERT;
