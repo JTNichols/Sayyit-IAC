@@ -184,6 +184,15 @@ jobs:
               handle.write('sqlServerPassword=' + ''.join(password) + '\n')
           PY
 
+      - name: Register production monitoring resource providers
+        if: ${{ env.ENV_NAME == 'prod' }}
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -e
+            az provider register --namespace Microsoft.OperationalInsights --wait
+            az provider register --namespace Microsoft.Insights --wait
+
       - name: Resolve IaC service principal object ID
         id: iac-principal
         uses: azure/CLI@v2
