@@ -1,4 +1,6 @@
-#Requires -Version 7.0
+# This script initializes SQL access for the Sayyit application.
+# It is called by the sayyit-iac-action.yml workflow, not manually.
+# Requires -Version 7.0
 
 [CmdletBinding()]
 param(
