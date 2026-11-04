@@ -406,6 +406,16 @@ resource dev_SqlServerAllowAdministratorIp 'Microsoft.Sql/servers/firewallRules@
     endIpAddress: administratorPublicIpAddress
   }
 }
+// Allow Azure services and resources to access this SQL server.
+// Equivalent to the Azure Portal checkbox.
+resource dev_SqlServerAllowAzureServices 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
+  parent: dev_SqlServer
+  name: 'AllowAllWindowsAzureIps'
+  properties: {
+    startIpAddress: '0.0.0.0'
+    endIpAddress: '0.0.0.0'
+  }
+}
 
 // -----------------------------------------------------------------------------
 // 8. Azure SQL database
