@@ -166,7 +166,32 @@ var sqlServerProperties = union({
 }, updatePassword ? {
   administratorLoginPassword: sqlServerAdministratorPassword
 } : {})
+// -----------------------------------------------------------------------------
+// 0. Production monitoring w/ App Insights
+// -----------------------------------------------------------------------------
 
+resource prod_LogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: '${baseName}-${env}-logs'
+  location: locationWebApp
+  tags: commonTags
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30
+  }
+}
+
+resource prod_ApplicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: '${baseName}-${env}-appinsights'
+  location: locationWebApp
+  kind: 'web'
+  tags: commonTags
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: prod_LogAnalyticsWorkspace.id
+  }
+}
 // -----------------------------------------------------------------------------
 // 1. Shared production App Service plan
 // -----------------------------------------------------------------------------
@@ -267,6 +292,7 @@ resource prod_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     AzureAd__Authority: externalIdAuthority
     AzureAd__Audience: externalIdApiClientId
     AzureAd__ValidateAuthority: 'true'
+    APPLICATIONINSIGHTS_CONNECTION_STRING: prod_ApplicationInsights.properties.ConnectionString
   }
 }
 
