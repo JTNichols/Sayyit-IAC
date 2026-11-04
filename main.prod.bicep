@@ -293,6 +293,10 @@ resource prod_WebApiSettings 'Microsoft.Web/sites/config@2023-12-01' = {
     AzureAd__Audience: externalIdApiClientId
     AzureAd__ValidateAuthority: 'true'
     APPLICATIONINSIGHTS_CONNECTION_STRING: prod_ApplicationInsights.properties.ConnectionString
+    // Enable App Service automatic instrumentation for ASP.NET Core on Windows.
+    ApplicationInsightsAgent_EXTENSION_VERSION: '~2'
+    XDT_MicrosoftApplicationInsights_Mode: 'recommended'
+    XDT_MicrosoftApplicationInsights_PreemptSdk: '1'
   }
 }
 
