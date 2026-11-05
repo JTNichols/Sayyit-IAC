@@ -111,9 +111,7 @@ param externalIdApiScope string = 'api://${externalIdApiClientId}/access_as_user
 
 // Allowed CORS origins for the API App Service (sayyit-dev-apiapp).
 // Includes local "development" environment origins for Blazor WASM and the deployed dev webapp.
-param apiCorsAllowedOrigins array = [
-  'https://localhost:7082'
-  'https://localhost:7176'
+param apiCorsAllowedOrigins array = [ 
   'https://sayyit-dev-webapp.azurewebsites.net'
 ]
 
@@ -286,6 +284,9 @@ resource dev_WebApiCors 'Microsoft.Web/sites/config@2023-12-01' = {
     }
   }
 }
+
+
+
 
 // -----------------------------------------------------------------------------
 // 4. Key Vault
